@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="elevator-sim">
+  <title>elevator-sim</title>
+  <!-- Solid ground so the mark reads the same against light and dark browser chrome. -->
+  <rect width="32" height="32" rx="7" fill="#0f172a" />
+  <!-- The shaft: two rails the car sits between. Thick enough to survive 16px. -->
+  <rect x="6" y="5" width="2.5" height="22" rx="1.25" fill="#334155" />
+  <rect x="23.5" y="5" width="2.5" height="22" rx="1.25" fill="#334155" />
+  <!-- The car, parked low: the one shape that must be unmistakable at favicon size. -->
+  <rect x="10" y="16" width="12" height="11" rx="1.5" fill="#f59e0b" />
+  <!-- Travelling up. -->
+  <path
+    d="M16 5.5 L21.5 12 H10.5 Z"
+    fill="#f59e0b"
+  />
+</svg>
