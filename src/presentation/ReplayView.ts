@@ -1,24 +1,40 @@
-import { RunTimeline } from '../application/RunTimeline';
+import { RunTimeline, type Snapshot } from '../application/RunTimeline';
 import { buildingOf, type Scenario, trafficConfigOf } from '../application/Scenario';
+import type { FloorId } from '../domain/config/BuildingConfig';
 import { DISPATCHERS, type DispatcherName } from '../domain/dispatch/registry';
 import { runSimulation } from '../domain/sim/Simulation';
 import { generateStream } from '../domain/traffic/PassengerStream';
 import { el, replace, svg } from './dom';
 
-const SHAFT_TOP = 16;
-const ROW_HEIGHT = 26;
-const CAR_WIDTH = 40;
+const TOP = 14;
+const ROW = 30;
+const LABEL_X = 22;
+const LANDING_RIGHT = 118;
+const DOOR_X = 126;
+const CAR_WIDTH = 52;
+const CAR_GAP = 12;
+const PERSON_R = 3.2;
+const MAX_WAITING_DOTS = 6;
+const MAX_OCCUPANT_DOTS = 12;
 const SPEEDS = [1, 4, 16, 60] as const;
+
+const CAR_FILL = '#f59e0b';
+const CAR_OPEN = '#fbbf24';
+const PERSON = '#e2e8f0';
+const RIDER = '#0f172a';
 
 /** Watching it is what makes the numbers believable, so this replays a single run frame by frame. */
 export class ReplayView {
   readonly element: HTMLElement;
   private readonly stage = el('div', { class: 'overflow-x-auto' });
   private readonly clock = el('span', { class: 'tabular-nums text-slate-400', text: '0 s' });
+  // In seconds, not percent: a percentage slider on a half-hour run jumps eighteen seconds a
+  // notch and skips straight over the door cycles worth watching.
   private readonly scrubber = el('input', {
     type: 'range',
     min: '0',
     max: '100',
+    step: '0.5',
     value: '0',
     class: 'w-full accent-amber-500',
   });
@@ -30,19 +46,21 @@ export class ReplayView {
 
   private timeline: RunTimeline | null = null;
   private scenario: Scenario | null = null;
+  private floors: readonly { id: FloorId; label: string }[] = [];
+  private capacity = 1;
   private time = 0;
   private speed = 16;
   private playing = false;
   private frame = 0;
   private lastTick: number | null = null;
   private cars: SVGElement[] = [];
-  private labels: SVGElement[] = [];
+  private dynamic: SVGElement | null = null;
 
   constructor() {
     this.playButton.addEventListener('click', () => this.toggle());
     this.scrubber.addEventListener('input', () => {
       if (!this.timeline) return;
-      this.time = (Number(this.scrubber.value) / 100) * this.timeline.duration;
+      this.time = Number(this.scrubber.value);
       this.draw();
     });
 
@@ -71,8 +89,11 @@ export class ReplayView {
     });
 
     this.scenario = scenario;
+    this.floors = building.floors.map((floor) => ({ id: floor.id, label: floor.label }));
+    this.capacity = building.cars[0]?.capacity ?? 1;
     this.timeline = new RunTimeline(building, result);
     this.time = 0;
+    this.scrubber.max = String(Math.max(1, Math.round(this.timeline.duration)));
     this.build();
     this.draw();
   }
@@ -124,103 +145,211 @@ export class ReplayView {
     if (this.playing) this.frame = requestAnimationFrame((next) => this.tick(next));
   }
 
+  private get carCount(): number {
+    return this.scenario?.cars ?? 1;
+  }
+
+  private carX(index: number): number {
+    return DOOR_X + 6 + index * (CAR_WIDTH + CAR_GAP);
+  }
+
+  private get width(): number {
+    return this.carX(this.carCount - 1) + CAR_WIDTH + 16;
+  }
+
+  private yOf(index: number): number {
+    return TOP + (this.floors.length - 1 - index) * ROW + ROW / 2;
+  }
+
+  private carTop(rowFromBottom: number): number {
+    return TOP + (this.floors.length - 1 - rowFromBottom) * ROW + 4;
+  }
+
+  private rowIndexOf(floor: FloorId): number {
+    return this.floors.findIndex((entry) => entry.id === floor);
+  }
+
   private build(): void {
-    const scenario = this.scenario;
-    if (!scenario) return;
+    const height = TOP * 2 + this.floors.length * ROW;
 
-    const floors = buildingOf(scenario).floors;
-    const height = SHAFT_TOP * 2 + floors.length * ROW_HEIGHT;
-    const shaftLeft = 70;
-    const width = shaftLeft + scenario.cars * (CAR_WIDTH + 14) + 90;
-
-    const rows = floors.flatMap((floor, index) => {
-      const y = yOf(floors.length, index);
+    const landings = this.floors.flatMap((floor, index) => {
+      const y = this.yOf(index);
       return [
         svg('line', {
-          x1: shaftLeft - 8,
-          y1: y,
-          x2: width - 80,
-          y2: y,
+          x1: 32,
+          y1: y + ROW / 2 - 1,
+          x2: LANDING_RIGHT,
+          y2: y + ROW / 2 - 1,
           stroke: '#1e293b',
         }),
         svg(
           'text',
-          { x: shaftLeft - 16, y: y + 4, 'text-anchor': 'end', fill: '#94a3b8', 'font-size': '11' },
+          { x: LABEL_X, y: y + 4, 'text-anchor': 'end', fill: '#94a3b8', 'font-size': '11' },
           [floor.label],
         ),
       ];
     });
 
-    this.cars = Array.from({ length: scenario.cars }, (_, index) =>
+    // The threshold people visibly cross, and a dark shaft behind each car.
+    const shaft = [
+      ...Array.from({ length: this.carCount }, (_, index) =>
+        svg('rect', {
+          x: this.carX(index) - 2,
+          y: TOP,
+          width: CAR_WIDTH + 4,
+          height: height - TOP * 2,
+          fill: '#0b1220',
+          rx: 3,
+        }),
+      ),
+      svg('line', {
+        x1: DOOR_X,
+        y1: TOP,
+        x2: DOOR_X,
+        y2: height - TOP,
+        stroke: '#334155',
+        'stroke-dasharray': '2 3',
+      }),
+    ];
+
+    this.cars = Array.from({ length: this.carCount }, (_, index) =>
       svg('rect', {
-        x: shaftLeft + index * (CAR_WIDTH + 14),
+        x: this.carX(index),
         y: 0,
         width: CAR_WIDTH,
-        height: ROW_HEIGHT - 8,
+        height: ROW - 8,
         rx: 3,
-        fill: '#f59e0b',
+        fill: CAR_FILL,
       }),
     );
 
-    this.labels = floors.map((_, index) =>
-      svg(
-        'text',
-        {
-          x: width - 76,
-          y: yOf(floors.length, index) + 4,
-          fill: '#64748b',
-          'font-size': '11',
-        },
-        [''],
-      ),
-    );
+    this.dynamic = svg('g', {});
 
-    // Capped rather than full-width: a portrait viewBox stretched across a wide card turns a
-    // seven-floor shaft into something a thousand pixels tall.
     replace(this.stage, [
       svg(
         'svg',
         {
-          viewBox: `0 0 ${width} ${height}`,
+          viewBox: `0 0 ${this.width} ${height}`,
           class: 'h-auto',
-          style: `width:min(100%, ${Math.round(width * 1.5)}px)`,
+          style: `width:min(100%, ${Math.round(this.width * 1.6)}px)`,
         },
-        [...rows, ...this.cars, ...this.labels],
+        [...shaft, ...landings, ...this.cars, this.dynamic],
       ),
     ]);
   }
 
   private draw(): void {
     const timeline = this.timeline;
-    const scenario = this.scenario;
-    if (!timeline || !scenario) return;
+    const dynamic = this.dynamic;
+    if (!timeline || !dynamic) return;
 
-    const floors = buildingOf(scenario).floors;
     const snapshot = timeline.at(this.time);
-    const lowest = floors[0]?.id ?? 0;
+    const lowest = this.floors[0]?.id ?? 0;
 
     snapshot.cars.forEach((car, index) => {
       const node = this.cars[index];
       if (!node) return;
-      const rowFromBottom = car.position - lowest;
-      const y = SHAFT_TOP + (floors.length - 1 - rowFromBottom) * ROW_HEIGHT + 4;
-      node.setAttribute('y', String(y));
-      node.setAttribute('fill', car.doorsOpen ? '#fbbf24' : '#f59e0b');
-      node.setAttribute('opacity', car.doorsOpen ? '0.7' : '1');
+      node.setAttribute('y', String(this.carTop(car.position - lowest)));
+      node.setAttribute('fill', car.doorsOpen ? CAR_OPEN : CAR_FILL);
     });
 
-    floors.forEach((floor, index) => {
-      const waiting = snapshot.waiting.get(floor.id) ?? 0;
-      const label = this.labels[index];
-      if (label)
-        label.textContent = waiting > 0 ? `${'•'.repeat(Math.min(waiting, 8))} ${waiting}` : '';
-    });
+    replace(dynamic, [
+      ...this.waitingDots(snapshot),
+      ...this.occupantDots(snapshot, lowest),
+      ...this.transferDots(snapshot),
+    ]);
 
     this.clock.textContent = `${this.time.toFixed(0)} s of ${timeline.duration.toFixed(0)} s`;
-    this.scrubber.value = String((this.time / Math.max(1, timeline.duration)) * 100);
+    this.scrubber.value = String(this.time);
   }
-}
 
-function yOf(floorCount: number, index: number): number {
-  return SHAFT_TOP + (floorCount - 1 - index) * ROW_HEIGHT + ROW_HEIGHT / 2;
+  /** People still waiting, queued on the landing towards the doors. */
+  private waitingDots(snapshot: Snapshot): SVGElement[] {
+    return [...snapshot.waiting].flatMap(([floor, count]) => {
+      const index = this.rowIndexOf(floor);
+      if (index < 0 || count === 0) return [];
+      const y = this.yOf(index);
+      const shown = Math.min(count, MAX_WAITING_DOTS);
+      const step = PERSON_R * 2 + 2.5;
+
+      const dots: SVGElement[] = Array.from({ length: shown }, (_, i) =>
+        svg('circle', { cx: LANDING_RIGHT - 6 - i * step, cy: y, r: PERSON_R, fill: PERSON }),
+      );
+
+      if (count > shown) {
+        dots.push(
+          svg(
+            'text',
+            {
+              x: LANDING_RIGHT - 10 - shown * step,
+              y: y + 4,
+              'text-anchor': 'end',
+              fill: '#64748b',
+              'font-size': '10',
+            },
+            [`+${count - shown}`],
+          ),
+        );
+      }
+      return dots;
+    });
+  }
+
+  /** Who is inside, drawn as heads in the car — or a count once a car holds too many to draw. */
+  private occupantDots(snapshot: Snapshot, lowest: FloorId): SVGElement[] {
+    return snapshot.cars.flatMap((car, index) => {
+      if (car.onboard === 0) return [];
+      const top = this.carTop(car.position - lowest);
+      const left = this.carX(index);
+
+      if (this.capacity > MAX_OCCUPANT_DOTS) {
+        return [
+          svg(
+            'text',
+            {
+              x: left + CAR_WIDTH / 2,
+              y: top + (ROW - 8) / 2 + 4,
+              'text-anchor': 'middle',
+              fill: RIDER,
+              'font-size': '11',
+              'font-weight': '600',
+            },
+            [`${car.onboard}/${this.capacity}`],
+          ),
+        ];
+      }
+
+      const perRow = Math.min(6, Math.max(1, this.capacity));
+      const spread = (CAR_WIDTH - 16) / Math.max(1, perRow - 1);
+      return Array.from({ length: car.onboard }, (_, i) =>
+        svg('circle', {
+          cx: left + 8 + (i % perRow) * spread,
+          cy: top + 7 + Math.floor(i / perRow) * 8,
+          r: PERSON_R - 0.4,
+          fill: RIDER,
+        }),
+      );
+    });
+  }
+
+  /** The bit that makes it read as people rather than counters: someone crossing the threshold. */
+  private transferDots(snapshot: Snapshot): SVGElement[] {
+    return snapshot.transfers.flatMap((transfer) => {
+      const index = this.rowIndexOf(transfer.floor);
+      if (index < 0) return [];
+      const y = this.yOf(index);
+      const landing = LANDING_RIGHT - 4;
+      const inside = this.carX(0) + 10;
+      const along = transfer.direction === 'boarding' ? transfer.progress : 1 - transfer.progress;
+
+      return [
+        svg('circle', {
+          cx: landing + (inside - landing) * along,
+          cy: y,
+          r: PERSON_R,
+          fill: transfer.direction === 'boarding' ? '#fde68a' : PERSON,
+        }),
+      ];
+    });
+  }
 }

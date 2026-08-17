@@ -10,10 +10,18 @@ export interface CarSnapshot {
   readonly onboard: number;
 }
 
+/** Somebody mid-step between the landing and the car. `progress` runs 0 → 1 as they walk. */
+export interface Transfer {
+  readonly floor: FloorId;
+  readonly direction: 'boarding' | 'alighting';
+  readonly progress: number;
+}
+
 export interface Snapshot {
   readonly time: number;
   readonly cars: readonly CarSnapshot[];
   readonly waiting: ReadonlyMap<FloorId, number>;
+  readonly transfers: readonly Transfer[];
 }
 
 interface Move {
@@ -41,10 +49,12 @@ interface CarTrack {
 export class RunTimeline {
   private readonly tracks: readonly CarTrack[];
   private readonly journeys: readonly Journey[];
+  private readonly transferTime: number;
 
   constructor(building: Building, result: SimResult & { readonly trace?: readonly TraceEntry[] }) {
     const trace = result.trace ?? [];
     this.journeys = result.journeys;
+    this.transferTime = building.cars[0]?.passengerTransferTime ?? 1;
     this.tracks = building.cars.map((_, index) =>
       trackOf(trace.filter((e) => e.carIndex === index)),
     );
@@ -62,6 +72,7 @@ export class RunTimeline {
         onboard: occupancyAt(track, time),
       })),
       waiting: this.waitingAt(time),
+      transfers: this.transfersAt(time),
     };
   }
 
@@ -73,6 +84,37 @@ export class RunTimeline {
       if (stillWaiting) counts.set(journey.origin, (counts.get(journey.origin) ?? 0) + 1);
     }
     return counts;
+  }
+
+  /**
+   * Who is stepping in or out right now. Read straight off the journeys: a passenger's `boardedAt`
+   * is the instant they finish walking in, so they were crossing the threshold for the transfer
+   * time before it. Nothing extra is recorded during the run to make this work.
+   */
+  private transfersAt(time: number): Transfer[] {
+    const transfers: Transfer[] = [];
+
+    for (const journey of this.journeys) {
+      const boarded = journey.boardedAt;
+      if (boarded !== null && time > boarded - this.transferTime && time <= boarded) {
+        transfers.push({
+          floor: journey.origin,
+          direction: 'boarding',
+          progress: 1 - (boarded - time) / this.transferTime,
+        });
+      }
+
+      const arrived = journey.arrivedAt;
+      if (arrived !== null && time > arrived - this.transferTime && time <= arrived) {
+        transfers.push({
+          floor: journey.destination,
+          direction: 'alighting',
+          progress: 1 - (arrived - time) / this.transferTime,
+        });
+      }
+    }
+
+    return transfers;
   }
 }
 

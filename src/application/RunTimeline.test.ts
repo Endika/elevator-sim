@@ -70,6 +70,67 @@ describe('waiting counts', () => {
   });
 });
 
+describe('people stepping in and out', () => {
+  const transferTime = scenario.car.passengerTransferTime;
+
+  it('shows somebody crossing the threshold in the moment before they board', () => {
+    const journey = result.journeys.find((entry) => entry.boardedAt !== null);
+    if (!journey?.boardedAt) throw new Error('expected somebody to board');
+
+    const midway = journey.boardedAt - transferTime / 2;
+    const boarding = timeline
+      .at(midway)
+      .transfers.filter((transfer) => transfer.direction === 'boarding');
+    expect(boarding.some((transfer) => transfer.floor === journey.origin)).toBe(true);
+  });
+
+  it('shows somebody stepping out in the moment before they arrive', () => {
+    const journey = result.journeys.find((entry) => entry.arrivedAt !== null);
+    if (!journey?.arrivedAt) throw new Error('expected somebody to arrive');
+
+    const alighting = timeline
+      .at(journey.arrivedAt - transferTime / 2)
+      .transfers.filter((transfer) => transfer.direction === 'alighting');
+    expect(alighting.some((transfer) => transfer.floor === journey.destination)).toBe(true);
+  });
+
+  it('walks them from nought to one across exactly the transfer time', () => {
+    const journey = result.journeys.find((entry) => entry.boardedAt !== null);
+    if (!journey?.boardedAt) throw new Error('expected somebody to board');
+
+    const at = (offset: number) =>
+      timeline
+        .at(journey.boardedAt! + offset)
+        .transfers.find(
+          (transfer) => transfer.direction === 'boarding' && transfer.floor === journey.origin,
+        );
+
+    expect(at(-transferTime + 0.01)?.progress).toBeLessThan(0.05);
+    expect(at(0)?.progress).toBeCloseTo(1, 6);
+    expect(at(-transferTime - 0.5)).toBeUndefined();
+    expect(at(0.5)).toBeUndefined();
+  });
+
+  it('nobody is mid-step while the car is between floors', () => {
+    for (let time = 0; time <= timeline.duration; time += 0.5) {
+      const snapshot = timeline.at(time);
+      if (snapshot.transfers.length === 0) continue;
+      const car = snapshot.cars[0];
+      if (!car) continue;
+      expect(car.doorsOpen).toBe(true);
+      expect(car.position).toBeCloseTo(Math.round(car.position), 6);
+    }
+  });
+
+  it('never shows more people inside than the car holds', () => {
+    for (let time = 0; time <= timeline.duration; time += 1) {
+      for (const car of timeline.at(time).cars) {
+        expect(car.onboard).toBeLessThanOrEqual(scenario.car.capacity);
+      }
+    }
+  });
+});
+
 describe('the timeline reads the run rather than redoing it', () => {
   it('does not alter the result it was given', () => {
     const before = JSON.stringify(result.journeys);

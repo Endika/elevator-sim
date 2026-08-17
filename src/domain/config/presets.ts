@@ -90,15 +90,20 @@ export const TOWER: BuildingConfig = {
 };
 
 /**
- * The building this project exists to answer questions about.
+ * The building this project exists to answer questions about: 7 floors above the entrance, no
+ * basement, one car, and it stays wherever the last passenger left it.
  *
- * Currently a copy of RESIDENTIAL_LOW because the real figures have not been supplied yet.
- * Deliberately kept as a separate export rather than an alias, so that filling in real
- * numbers is an edit to this object and nothing else.
+ * Those four facts are real. Everything else — six residents per floor, a six-person car, the door
+ * timings — is still the residential ESTIMATE set, and the residents-per-floor figure is the one
+ * most likely to shift the answer, since demand scales with it.
+ *
+ * Structurally identical to RESIDENTIAL_LOW, which is a finding rather than a coincidence: the
+ * generic low-rise preset already described this building.
  */
 export const MY_BUILDING: BuildingConfig = {
   ...RESIDENTIAL_LOW,
-  name: 'My building (placeholder — real figures pending)',
+  name: 'My building — 7 floors, 1 car, stays where it was left',
+  idlePolicy: 'stay-put',
 };
 
 export const PRESETS = {

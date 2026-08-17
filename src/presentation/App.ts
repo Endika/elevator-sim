@@ -136,8 +136,9 @@ export class App {
             el('p', {
               class: 'mb-3 text-xs text-slate-500',
               text:
-                'One seed, played back. Dots on the right are people still waiting. Compare it ' +
-                'with what your own lift does.',
+                'One seed, played back. Pale dots on the landing are people waiting, dark heads ' +
+                'inside the car are riders, and an amber dot is somebody stepping in or out. ' +
+                'Compare it with what your own lift does.',
             }),
             this.replay.element,
           ]),

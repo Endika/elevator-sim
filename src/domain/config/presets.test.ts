@@ -18,8 +18,12 @@ describe('presets', () => {
     expect(entrances).toEqual(['B2', 'G']);
   });
 
-  it('leaves my-building as a placeholder until the real figures arrive', () => {
-    expect(PRESETS['my-building'].name).toContain('placeholder');
+  it('describes the real building: 7 floors, no basement, one car, stays put', () => {
+    const mine = PRESETS['my-building'];
+    expect(mine.floors.filter((floor) => floor.id > 0)).toHaveLength(7);
+    expect(mine.floors.filter((floor) => floor.id < 0)).toHaveLength(0);
+    expect(mine.cars).toHaveLength(1);
+    expect(mine.idlePolicy).toBe('stay-put');
   });
 });
 
