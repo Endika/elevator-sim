@@ -173,8 +173,17 @@ export class FormView {
         this.number('People per floor', this.scenario.peoplePerFloor, (value) =>
           this.update({ peoplePerFloor: Math.round(value) }),
         ),
-        this.number('People the car holds', this.scenario.car.capacity, (value) =>
-          this.updateCar({ capacity: Math.round(value) }),
+        this.number(
+          'People the car holds',
+          this.scenario.car.capacity,
+          (value) => this.updateCar({ capacity: Math.round(value) }),
+          {
+            min: '1',
+            hint:
+              'On the plate inside the car, next to the kilos. Worth getting right: two people ' +
+              'out costs more than any change of algorithm — and try one less than the plate says, ' +
+              'since nobody packs in to the nominal figure.',
+          },
         ),
         this.number(
           'Seeds',
