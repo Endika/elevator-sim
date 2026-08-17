@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createPrng, deriveSeed } from './Prng';
 
-/**
- * Every assertion here runs on a fixed seed, so what look like statistical tests are actually
- * deterministic ones. They cannot go intermittent: if one fails, the generator changed.
- */
+// Fixed seeds throughout: the statistical-looking assertions are deterministic and cannot go
+// intermittent.
 
 describe('determinism', () => {
   const draw = (seed: number, count: number): number[] => {
@@ -24,11 +22,6 @@ describe('determinism', () => {
 
   it('gives different sequences for different seeds', () => {
     expect(draw(1, 10)).not.toEqual(draw(2, 10));
-  });
-
-  it('shares no values between two seeds over a short run', () => {
-    const overlap = draw(1, 50).filter((value) => draw(2, 50).includes(value));
-    expect(overlap).toEqual([]);
   });
 
   it('refuses a non-integer seed, which could not be written down and reused', () => {

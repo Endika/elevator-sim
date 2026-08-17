@@ -1,22 +1,13 @@
 /**
- * Default car physics, with provenance. See ../../../elevator-sim-notes/sources.md.
- *
- * Two markers are used and they mean different things:
- *   SOURCED  — traceable to a published figure, cited inline.
- *   ESTIMATE — a plausible value with no source found. Not dressed up as precision.
- *
- * The distinction matters: the whole comparison is invalid if the physics is wrong, so it has
- * to be obvious at a glance which numbers are load-bearing evidence and which are guesses.
+ * SOURCED — traceable to a published figure, cited inline. ESTIMATE — a plausible value with no
+ * source found, not dressed up as precision. Full references in elevator-sim-notes/sources.md.
  */
 
 import type { CarSpec } from './BuildingConfig';
 
 /**
- * A lift in a low-rise apartment block.
- *
- * Careful: searching for "residential lift speed" surfaces 0.15 m/s, which is a domestic
- * platform lift for a single home, not the lift in a block of flats. Different machine,
- * different regulations. Not used here.
+ * A lift in a low-rise apartment block. Not a domestic platform lift — those run at 0.15 m/s and
+ * are a different machine under different regulations.
  */
 export const RESIDENTIAL_CAR: CarSpec = {
   // ESTIMATE — 6 persons / 450 kg is the common small apartment car.
@@ -73,10 +64,7 @@ export const OFFICE_CAR: CarSpec = {
   passengerTransferTime: 1.2,
 };
 
-/**
- * A high-rise car, taken straight from the one real installation measured in S1, Table 1.
- * The only preset whose kinematics and door times all come from the same measurement.
- */
+/** The only car whose kinematics and door times all come from one measurement (S1, Table 1). */
 export const TOWER_CAR: CarSpec = {
   // ESTIMATE — 21 persons / 1600 kg.
   capacity: 21,

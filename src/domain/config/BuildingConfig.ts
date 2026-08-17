@@ -1,8 +1,3 @@
-/**
- * A building, described entirely by data. Changing floors, cars or population must never
- * require touching code — that is an acceptance criterion, not a preference.
- */
-
 /** Signed floor index: 0 is ground, negatives are basements. Ordered, contiguous not required. */
 export type FloorId = number;
 
@@ -18,10 +13,7 @@ export interface Floor {
   readonly isEntrance: boolean;
 }
 
-/**
- * Car kinematics and door timings. Every field is seconds or SI, never a magic multiplier.
- * Sourced values and estimates are separated in PhysicsDefaults.
- */
+/** Seconds and SI throughout. Provenance of the defaults lives in PhysicsDefaults. */
 export interface CarSpec {
   /** Persons. */
   readonly capacity: number;
@@ -50,7 +42,7 @@ export interface CarSpec {
   readonly passengerTransferTime: number;
 }
 
-/** What the car does once nobody is calling it. Crossable with any dispatch algorithm. */
+/** Crossable with any dispatch algorithm, deliberately not part of it. */
 export type IdlePolicy = 'stay-put' | 'return-to-entrance' | 'park-at-busiest' | 'park-at-middle';
 
 export const IDLE_POLICIES: readonly IdlePolicy[] = [
@@ -71,18 +63,7 @@ export interface BuildingConfig {
   readonly idleDelaySeconds: number;
 }
 
-export function totalPopulation(building: BuildingConfig): number {
-  return building.floors.reduce((sum, floor) => sum + floor.population, 0);
-}
-
-export function entranceFloors(building: BuildingConfig): readonly Floor[] {
-  return building.floors.filter((floor) => floor.isEntrance);
-}
-
-/**
- * Human-readable problems with a config, empty when it is usable. Messages are written for a
- * person filling in a form, not for a parser.
- */
+/** Problems worded for a person filling in a form, empty when the config is usable. */
 export function validateBuilding(building: BuildingConfig): string[] {
   return [
     ...validateFloors(building.floors),

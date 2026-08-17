@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  type BuildingConfig,
-  entranceFloors,
-  parseBuilding,
-  totalPopulation,
-  validateBuilding,
-} from './BuildingConfig';
+import { type BuildingConfig, parseBuilding, validateBuilding } from './BuildingConfig';
 import { RESIDENTIAL_CAR } from './PhysicsDefaults';
 import { floorStack, RESIDENTIAL_LOW } from './presets';
 
@@ -16,15 +10,6 @@ function building(overrides: Partial<BuildingConfig> = {}): BuildingConfig {
 describe('a usable building', () => {
   it('accepts the residential preset', () => {
     expect(validateBuilding(RESIDENTIAL_LOW)).toEqual([]);
-  });
-
-  it('counts population across floors, ignoring the entrance', () => {
-    // 7 floors above ground at 6 people each; the ground floor houses nobody.
-    expect(totalPopulation(RESIDENTIAL_LOW)).toBe(42);
-  });
-
-  it('finds the entrance floors', () => {
-    expect(entranceFloors(RESIDENTIAL_LOW).map((f) => f.label)).toEqual(['G']);
   });
 });
 

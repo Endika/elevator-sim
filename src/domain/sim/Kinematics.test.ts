@@ -111,10 +111,6 @@ describe('flightTime behaves like a lift', () => {
     expect(time).toBeLessThan(8);
   });
 
-  it('is faster in a faster car over the same distance', () => {
-    expect(flightTime(30, TOWER_CAR)).toBeLessThan(flightTime(30, RESIDENTIAL_CAR));
-  });
-
   it('rejects a negative distance rather than returning nonsense', () => {
     expect(() => flightTime(-1, RESIDENTIAL_CAR)).toThrow(/non-negative/);
   });

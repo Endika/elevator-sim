@@ -1,16 +1,8 @@
-/**
- * Where passengers come from and where they are going, per traffic pattern.
- *
- * These are modelling choices, and the ones that are choices rather than convention are marked
- * as such. Getting them wrong biases every comparison, so they are stated here in one place
- * instead of being spread through the generator.
- */
-
-import type { BuildingConfig, Floor, FloorId } from '../config/BuildingConfig';
+import type { Building } from '../building/Building';
+import type { Floor, FloorId } from '../config/BuildingConfig';
 import type { TrafficPattern } from '../config/TrafficConfig';
 import type { Prng } from '../random/Prng';
 
-/** Up means entrance to an occupied floor; down the reverse; interfloor stays upstairs. */
 export type TripKind = 'up' | 'down' | 'interfloor';
 
 export interface Trip {
@@ -20,24 +12,13 @@ export interface Trip {
 }
 
 /**
- * Share of trips by kind for the mixed patterns. DECLARED ASSUMPTION, not a sourced figure:
- * both lunch and residential traffic are treated as balanced up and down with a slice of
- * interfloor. Kept as data so it can be argued with, and so a reader can see it is an assumption
- * rather than a measurement.
+ * DECLARED ASSUMPTION, not a sourced figure: lunch and residential traffic are treated as
+ * balanced up and down with a tenth interfloor.
  */
 const MIXES: Record<'lunch' | 'residential-sparse', Record<TripKind, number>> = {
   lunch: { up: 0.45, down: 0.45, interfloor: 0.1 },
-  // People in a block of flats rarely visit each other by lift.
   'residential-sparse': { up: 0.45, down: 0.45, interfloor: 0.1 },
 };
-
-function entrances(building: BuildingConfig): readonly Floor[] {
-  return building.floors.filter((floor) => floor.isEntrance);
-}
-
-function occupied(building: BuildingConfig): readonly Floor[] {
-  return building.floors.filter((floor) => floor.population > 0);
-}
 
 function pickUniform(options: readonly Floor[], prng: Prng, what: string): FloorId {
   if (options.length === 0) throw new Error(`No ${what} available to pick.`);
@@ -54,11 +35,9 @@ function pickByPopulation(options: readonly Floor[], prng: Prng): FloorId {
 }
 
 /**
- * `up-peak` and `down-peak` are deliberately *pure*: every trip starts at an entrance, or ends
- * at one, with no interfloor share mixed in. Real morning traffic has a small interfloor
- * component, but the closed-form handling-capacity result that validates this simulator in T7
- * assumes pure up-peak, and keeping the pattern pure is what makes that comparison meaningful.
- * The realistic mixes live in `lunch` and `residential-sparse`.
+ * The peaks are deliberately pure — every trip starts or ends at an entrance, with no interfloor
+ * share. The closed-form handling-capacity check in T7 assumes pure up-peak, and that is what
+ * makes the comparison meaningful. Realistic mixes live in `lunch` and `residential-sparse`.
  */
 export function drawTripKind(pattern: TrafficPattern, prng: Prng): TripKind {
   switch (pattern) {
@@ -79,64 +58,55 @@ export function drawTripKind(pattern: TrafficPattern, prng: Prng): TripKind {
   }
 }
 
-export function drawOrigin(building: BuildingConfig, kind: TripKind, prng: Prng): FloorId {
-  if (kind === 'up') return pickUniform(entrances(building), prng, 'entrance');
-  return pickByPopulation(occupied(building), prng);
+export function drawOrigin(building: Building, kind: TripKind, prng: Prng): FloorId {
+  if (kind === 'up') return pickUniform(building.entrances, prng, 'entrance');
+  return pickByPopulation(building.occupied, prng);
 }
 
-/**
- * Always returns a floor different from the origin. Not a filter applied afterwards — the
- * candidate list excludes the origin before drawing, so no passenger is ever silently dropped
- * for wanting to travel nowhere.
- */
+/** Never the origin: the candidate list excludes it, so no passenger is dropped afterwards. */
 export function drawDestination(
-  building: BuildingConfig,
+  building: Building,
   kind: TripKind,
   origin: FloorId,
   prng: Prng,
 ): FloorId {
   if (kind === 'down') {
-    const options = entrances(building).filter((floor) => floor.id !== origin);
+    const options = building.entrances.filter((floor) => floor.id !== origin);
     return pickUniform(options, prng, 'entrance other than the origin');
   }
-  const options = occupied(building).filter((floor) => floor.id !== origin);
-  return pickByPopulation(options, prng);
+  return pickByPopulation(
+    building.occupied.filter((floor) => floor.id !== origin),
+    prng,
+  );
 }
 
-export function drawTrip(building: BuildingConfig, pattern: TrafficPattern, prng: Prng): Trip {
+export function drawTrip(building: Building, pattern: TrafficPattern, prng: Prng): Trip {
   const kind = drawTripKind(pattern, prng);
   const origin = drawOrigin(building, kind, prng);
   return { kind, origin, destination: drawDestination(building, kind, origin, prng) };
 }
 
-/** Whether a pattern can produce any journey at all in this building. */
-export function patternIsPossible(building: BuildingConfig, pattern: TrafficPattern): string[] {
+export function patternIsPossible(building: Building, pattern: TrafficPattern): string[] {
   const problems: string[] = [];
-  const entranceFloors = entrances(building);
-  const occupiedFloors = occupied(building);
 
-  if (entranceFloors.length === 0) {
+  if (building.entrances.length === 0) {
     problems.push('The building has no entrance floor, so nobody can arrive.');
   }
 
-  if (occupiedFloors.length === 0) {
+  if (building.occupied.length === 0) {
     problems.push('No floor has any population, so there are no journeys to make.');
     return problems;
   }
 
-  // Every pattern with an interfloor share needs two occupied floors, not just the pure one.
-  const needsTwoOccupied =
-    pattern === 'interfloor' || pattern === 'lunch' || pattern === 'residential-sparse';
-  if (needsTwoOccupied && occupiedFloors.length < 2) {
+  const needsTwoOccupied = pattern !== 'up-peak' && pattern !== 'down-peak';
+  if (needsTwoOccupied && building.occupied.length < 2) {
     problems.push(
       `"${pattern}" traffic moves people between occupied floors, but only ` +
-        `${occupiedFloors.length} floor has anybody on it.`,
+        `${building.occupied.length} floor has anybody on it.`,
     );
   }
 
-  // The pathological case: everyone lives on the only way in, so there is nowhere to go.
-  const everyoneLivesAtTheDoor = occupiedFloors.every((floor) => floor.isEntrance);
-  if (everyoneLivesAtTheDoor && entranceFloors.length === 1) {
+  if (building.occupied.every((floor) => floor.isEntrance) && building.entrances.length === 1) {
     problems.push(
       'The only populated floor is the only entrance, so there is no journey to simulate.',
     );

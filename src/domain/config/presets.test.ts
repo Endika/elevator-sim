@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { totalPopulation, validateBuilding } from './BuildingConfig';
+import { Building } from '../building/Building';
+import { validateBuilding } from './BuildingConfig';
 import { floorStack, PRESET_NAMES, PRESETS } from './presets';
 
 describe('presets', () => {
@@ -69,6 +70,6 @@ describe('floorStack', () => {
       }),
     };
     expect(validateBuilding(tall)).toEqual([]);
-    expect(totalPopulation(tall)).toBe(120);
+    expect(Building.of(tall).totalPopulation).toBe(120);
   });
 });

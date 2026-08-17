@@ -1,19 +1,13 @@
 /**
- * Demand, expressed the way lift engineering expresses it: a percentage of the building
- * population arriving per five minutes. Keeping the industry unit means the simulator can be
- * checked against published handling-capacity figures instead of only against itself.
+ * Demand in the industry unit — percentage of population per five minutes — so results can be
+ * checked against published handling-capacity figures rather than only against ourselves.
  */
 
 export type TrafficPattern =
-  /** Morning: nearly everyone enters at an entrance floor and goes up. */
   | 'up-peak'
-  /** Evening: nearly everyone leaves towards an entrance floor. */
   | 'down-peak'
-  /** Balanced two-way movement between upper floors. */
   | 'interfloor'
-  /** Mixed: up, down and interfloor at once. */
   | 'lunch'
-  /** Residential reality: low intensity, arriving in bursts rather than smoothly. */
   | 'residential-sparse';
 
 export const TRAFFIC_PATTERNS: readonly TrafficPattern[] = [
@@ -30,10 +24,7 @@ export interface TrafficConfig {
   readonly durationSeconds: number;
   /** Percentage of the building population arriving per 5 minutes. */
   readonly demandPercentPer5Min: number;
-  /**
-   * How clumped the arrivals are. 1 means a plain Poisson process; higher values mean the same
-   * total demand arrives in bursts, which is what a block of flats actually looks like.
-   */
+  /** 1 is a plain Poisson process; higher clumps the same demand into bursts. */
   readonly burstiness: number;
 }
 

@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
+import { Building } from '../building/Building';
 import { OFFICE_MID, RESIDENTIAL_LOW, TOWER } from '../config/presets';
 import { TRAFFIC_PATTERNS } from '../config/TrafficConfig';
 import { createPrng } from '../random/Prng';
 import { drawTrip, drawTripKind, patternIsPossible } from './patterns';
 
+const office = Building.of(OFFICE_MID);
+const tower = Building.of(TOWER);
+
 describe('every pattern produces valid journeys', () => {
   it.each(TRAFFIC_PATTERNS)('%s', (pattern) => {
     const prng = createPrng(21);
-    const ids = new Set(OFFICE_MID.floors.map((f) => f.id));
+    const ids = new Set(office.floorIds);
     for (let i = 0; i < 500; i += 1) {
-      const trip = drawTrip(OFFICE_MID, pattern, prng);
+      const trip = drawTrip(office, pattern, prng);
       expect(trip.origin).not.toBe(trip.destination);
       expect(ids.has(trip.origin)).toBe(true);
       expect(ids.has(trip.destination)).toBe(true);
@@ -51,12 +55,12 @@ describe('trip kinds by pattern', () => {
 
 describe('busier floors generate more traffic', () => {
   it('weights origins by population in down-peak', () => {
-    const lopsided = {
+    const lopsided = Building.of({
       ...RESIDENTIAL_LOW,
       floors: RESIDENTIAL_LOW.floors.map((floor) =>
         floor.id === 1 ? { ...floor, population: 100 } : floor,
       ),
-    };
+    });
     const prng = createPrng(31);
     let fromFirstFloor = 0;
     const draws = 5_000;
@@ -72,7 +76,7 @@ describe('multiple entrances', () => {
   it('uses both the garage and the street door in the tower', () => {
     const prng = createPrng(41);
     const origins = new Set(
-      Array.from({ length: 500 }, () => drawTrip(TOWER, 'up-peak', prng).origin),
+      Array.from({ length: 500 }, () => drawTrip(tower, 'up-peak', prng).origin),
     );
     expect([...origins].sort((a, b) => a - b)).toEqual([-2, 0]);
   });
@@ -81,17 +85,17 @@ describe('multiple entrances', () => {
 describe('patternIsPossible', () => {
   it('accepts every pattern in a normal building', () => {
     for (const pattern of TRAFFIC_PATTERNS) {
-      expect(patternIsPossible(OFFICE_MID, pattern)).toEqual([]);
+      expect(patternIsPossible(office, pattern)).toEqual([]);
     }
   });
 
   it('rejects interfloor traffic when only one floor is occupied', () => {
-    const single = {
+    const single = Building.of({
       ...RESIDENTIAL_LOW,
       floors: RESIDENTIAL_LOW.floors.map((floor) =>
         floor.id === 1 ? floor : { ...floor, population: 0 },
       ),
-    };
+    });
     expect(patternIsPossible(single, 'interfloor')).toContain(
       '"interfloor" traffic moves people between occupied floors, but only 1 floor has anybody ' +
         'on it.',
@@ -99,12 +103,12 @@ describe('patternIsPossible', () => {
   });
 
   it('still allows up-peak with a single occupied floor', () => {
-    const single = {
+    const single = Building.of({
       ...RESIDENTIAL_LOW,
       floors: RESIDENTIAL_LOW.floors.map((floor) =>
         floor.id === 1 ? floor : { ...floor, population: 0 },
       ),
-    };
+    });
     expect(patternIsPossible(single, 'up-peak')).toEqual([]);
   });
 });

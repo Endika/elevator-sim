@@ -1,18 +1,16 @@
 import { describe, expect, it } from 'vitest';
+import { Building } from '../building/Building';
 import type { FloorId } from '../config/BuildingConfig';
 import { RESIDENTIAL_CAR } from '../config/PhysicsDefaults';
 import { RESIDENTIAL_LOW } from '../config/presets';
 import type { TrafficConfig } from '../config/TrafficConfig';
+import type { Dispatcher } from '../ports/Dispatcher';
 import { generateStream, type PassengerStream } from '../traffic/PassengerStream';
 import { checkInvariants, timeToDestinationOf, waitOf } from './invariants';
 import { flightTime } from './Kinematics';
 import { runSimulation } from './Simulation';
-import type { Dispatcher } from './types';
 
-/**
- * An in-memory fake dispatcher, not a mock: it really decides, it is just the simplest thing
- * that can. Each free car takes a distinct pending hall call; passengers inside come first.
- */
+/** An in-memory fake, not a mock: it really decides, it is just the simplest thing that can. */
 const nearestFirst: Dispatcher = {
   name: 'test-nearest',
   nextStop(car, context) {
@@ -47,6 +45,8 @@ function handMadeStream(
   };
 }
 
+const residential = Building.of(RESIDENTIAL_LOW);
+
 const TRAFFIC: TrafficConfig = {
   pattern: 'residential-sparse',
   durationSeconds: 1800,
@@ -55,12 +55,11 @@ const TRAFFIC: TrafficConfig = {
 };
 
 describe('a single journey, timed by hand', () => {
-  // One passenger at the ground floor going to floor 3, with the car already at the ground
-  // floor. Every component of the timing is checked, because if this is wrong everything
-  // downstream is wrong in a way that still looks plausible.
+  // Every timing component is checked: a wrong one here is wrong everywhere downstream, and
+  // still looks plausible.
   const stream = handMadeStream([{ id: 1, arrivalTime: 10, origin: 0, destination: 3 }]);
   const result = runSimulation({
-    building: { ...RESIDENTIAL_LOW, idlePolicy: 'stay-put' },
+    building: Building.of({ ...RESIDENTIAL_LOW, idlePolicy: 'stay-put' }),
     stream,
     dispatcher: nearestFirst,
     trace: true,
@@ -99,7 +98,7 @@ describe('a single journey, timed by hand', () => {
     expect(result.carDistance).toBeCloseTo(8.4, 6);
   });
 
-  it('never has the car in two states at once', () => {
+  it('runs the door and travel phases in order', () => {
     const kinds = result.trace?.map((entry) => entry.kind) ?? [];
     expect(kinds).toEqual([
       'opens',
@@ -115,24 +114,24 @@ describe('a single journey, timed by hand', () => {
 
 describe('determinism', () => {
   it('produces an identical result for an identical run', () => {
-    const stream = generateStream(RESIDENTIAL_LOW, TRAFFIC, 5);
-    const once = runSimulation({ building: RESIDENTIAL_LOW, stream, dispatcher: nearestFirst });
-    const twice = runSimulation({ building: RESIDENTIAL_LOW, stream, dispatcher: nearestFirst });
+    const stream = generateStream(residential, TRAFFIC, 5);
+    const once = runSimulation({ building: residential, stream, dispatcher: nearestFirst });
+    const twice = runSimulation({ building: residential, stream, dispatcher: nearestFirst });
     expect(once).toEqual(twice);
   });
 
   it('gives every algorithm the same demand to face', () => {
-    const stream = generateStream(RESIDENTIAL_LOW, TRAFFIC, 5);
+    const stream = generateStream(residential, TRAFFIC, 5);
     const before = JSON.stringify(stream);
-    runSimulation({ building: RESIDENTIAL_LOW, stream, dispatcher: nearestFirst });
+    runSimulation({ building: residential, stream, dispatcher: nearestFirst });
     expect(JSON.stringify(stream)).toBe(before);
   });
 });
 
 describe('invariants hold on a full run', () => {
-  const stream = generateStream(RESIDENTIAL_LOW, TRAFFIC, 7);
+  const stream = generateStream(residential, TRAFFIC, 7);
   const result = runSimulation({
-    building: RESIDENTIAL_LOW,
+    building: residential,
     stream,
     dispatcher: nearestFirst,
     trace: true,
@@ -170,11 +169,11 @@ describe('invariants hold on a full run', () => {
 });
 
 describe('a full car leaves people behind rather than swallowing them', () => {
-  const tiny = {
+  const tiny = Building.of({
     ...RESIDENTIAL_LOW,
     cars: [{ ...RESIDENTIAL_CAR, capacity: 1 }],
-    idlePolicy: 'stay-put' as const,
-  };
+    idlePolicy: 'stay-put',
+  });
   // Four people at the ground floor at the same instant, one seat.
   const stream = handMadeStream([
     { id: 1, arrivalTime: 0, origin: 0, destination: 5 },
@@ -205,7 +204,7 @@ describe('idle policy is a separate dimension from dispatch', () => {
 
   it('leaves the car where it finished when told to stay put', () => {
     const result = runSimulation({
-      building: RESIDENTIAL_LOW,
+      building: residential,
       stream,
       dispatcher: nearestFirst,
       idlePolicy: 'stay-put',
@@ -217,7 +216,7 @@ describe('idle policy is a separate dimension from dispatch', () => {
 
   it('sends the car back to the entrance when told to', () => {
     const result = runSimulation({
-      building: RESIDENTIAL_LOW,
+      building: residential,
       stream,
       dispatcher: nearestFirst,
       idlePolicy: 'return-to-entrance',
@@ -229,13 +228,13 @@ describe('idle policy is a separate dimension from dispatch', () => {
 
   it('costs extra starts and distance to park', () => {
     const stay = runSimulation({
-      building: RESIDENTIAL_LOW,
+      building: residential,
       stream,
       dispatcher: nearestFirst,
       idlePolicy: 'stay-put',
     });
     const park = runSimulation({
-      building: RESIDENTIAL_LOW,
+      building: residential,
       stream,
       dispatcher: nearestFirst,
       idlePolicy: 'return-to-entrance',
@@ -247,8 +246,11 @@ describe('idle policy is a separate dimension from dispatch', () => {
 
 describe('several cars', () => {
   it('runs a six-car tower with no special casing in the engine', () => {
-    const stream = generateStream(RESIDENTIAL_LOW, TRAFFIC, 3);
-    const sixCars = { ...RESIDENTIAL_LOW, cars: Array.from({ length: 6 }, () => RESIDENTIAL_CAR) };
+    const stream = generateStream(residential, TRAFFIC, 3);
+    const sixCars = Building.of({
+      ...RESIDENTIAL_LOW,
+      cars: Array.from({ length: 6 }, () => RESIDENTIAL_CAR),
+    });
     const result = runSimulation({ building: sixCars, stream, dispatcher: nearestFirst });
     expect(checkInvariants(stream, result)).toEqual([]);
     expect(result.unfinished).toBe(0);
@@ -263,9 +265,9 @@ describe('refusing to hide a broken dispatcher', () => {
       boardingDirection: () => 'any',
     };
     const stream = handMadeStream([{ id: 1, arrivalTime: 0, origin: 0, destination: 3 }]);
-    expect(() =>
-      runSimulation({ building: RESIDENTIAL_LOW, stream, dispatcher: offPiste }),
-    ).toThrow(/does not exist in this building/);
+    expect(() => runSimulation({ building: residential, stream, dispatcher: offPiste })).toThrow(
+      /which does not exist/,
+    );
   });
 
   it('rejects a dispatcher that parks a car on a pointless loop', () => {
@@ -277,9 +279,9 @@ describe('refusing to hide a broken dispatcher', () => {
       boardingDirection: () => 'up',
     };
     const stream = handMadeStream([{ id: 1, arrivalTime: 0, origin: 0, destination: 3 }]);
-    expect(() =>
-      runSimulation({ building: RESIDENTIAL_LOW, stream, dispatcher: pointless }),
-    ).toThrow(/dispatcher bug, not a slow lift/);
+    expect(() => runSimulation({ building: residential, stream, dispatcher: pointless })).toThrow(
+      /dispatcher bug, not a slow lift/,
+    );
   });
 });
 
@@ -287,7 +289,7 @@ describe('running out of time', () => {
   it('reports unfinished journeys instead of pretending they arrived', () => {
     const stream = handMadeStream([{ id: 1, arrivalTime: 0, origin: 0, destination: 7 }], 1);
     const result = runSimulation({
-      building: RESIDENTIAL_LOW,
+      building: residential,
       stream,
       dispatcher: nearestFirst,
       drainSeconds: 0,

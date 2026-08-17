@@ -67,28 +67,8 @@ describe('ordering', () => {
 });
 
 describe('bookkeeping', () => {
-  it('reports its size', () => {
-    const queue = new EventQueue<string>();
-    expect(queue.size).toBe(0);
-    queue.push(1, 0, 'a');
-    queue.push(2, 0, 'b');
-    expect(queue.size).toBe(2);
-    queue.pop();
-    expect(queue.size).toBe(1);
-  });
-
-  it('peeks the next time without consuming', () => {
-    const queue = new EventQueue<string>();
-    queue.push(9, 0, 'later');
-    queue.push(4, 0, 'sooner');
-    expect(queue.peekTime()).toBe(4);
-    expect(queue.size).toBe(2);
-  });
-
   it('returns null when empty rather than undefined behaviour', () => {
-    const queue = new EventQueue<string>();
-    expect(queue.pop()).toBeNull();
-    expect(queue.peekTime()).toBeNull();
+    expect(new EventQueue<string>().pop()).toBeNull();
   });
 
   it('rejects a non-finite time, which would poison the ordering', () => {

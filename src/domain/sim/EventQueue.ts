@@ -1,19 +1,13 @@
 /**
- * A time-ordered event queue with a fully determined order.
- *
- * Ties matter more than they look. Two events at the same instant must always come out in the
- * same order, or two runs of the same seed diverge and the whole paired-comparison method
- * collapses. Order is therefore (time, priority, insertion sequence) — never heap accident.
+ * Order is (time, priority, insertion sequence). The last term matters: without it two events at
+ * the same instant could come out in heap order, and two runs of one seed would diverge.
  */
 
+/** Within one instant: buttons are seen, then motion resolves, then cars decide. */
 export const PRIORITY = {
-  /** A passenger presses a button before any car reacts at the same instant. */
   passengerArrival: 0,
-  /** Doors and travel resolve next. */
   carMotion: 1,
-  /** Decisions come last, so they see everything that happened at this instant. */
   carDecision: 2,
-  /** Idle parking is the lowest priority of all. */
   idleCheck: 3,
 } as const;
 
@@ -37,10 +31,6 @@ export class EventQueue<T> {
   private readonly heap: Entry<T>[] = [];
   private sequence = 0;
 
-  get size(): number {
-    return this.heap.length;
-  }
-
   push(time: number, priority: number, payload: T): void {
     if (!Number.isFinite(time)) {
       throw new Error(`Event time must be finite; got ${time}.`);
@@ -48,10 +38,6 @@ export class EventQueue<T> {
     this.heap.push({ time, priority, payload, sequence: this.sequence });
     this.sequence += 1;
     this.siftUp(this.heap.length - 1);
-  }
-
-  peekTime(): number | null {
-    return this.heap[0]?.time ?? null;
   }
 
   pop(): QueuedEvent<T> | null {

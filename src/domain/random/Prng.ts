@@ -1,12 +1,6 @@
 /**
- * Seeded randomness. There is no unseeded randomness anywhere in the engine — every number
- * that varies traces back to an integer seed the caller chose, which is what makes a run
- * reproducible and what makes paired comparisons between algorithms possible at all.
- *
- * Algorithms: sfc32 for the stream, splitmix32 to expand a single seed into its 128-bit state.
- * Both are small, fast and well travelled. They are verified here statistically and for
- * determinism rather than against published test vectors, which we have no citable source for
- * — stated plainly rather than implied.
+ * sfc32 for the stream, splitmix32 to expand one seed into its state. Verified statistically and
+ * for determinism, not against published test vectors — we have no citable source for those.
  */
 
 export interface Prng {
@@ -22,7 +16,6 @@ export interface Prng {
   nextWeightedIndex(weights: readonly number[]): number;
 }
 
-/** Expands one seed into four 32-bit words of state. */
 function splitmix32(seed: number): () => number {
   let a = seed | 0;
   return () => {
@@ -95,18 +88,13 @@ export function createPrng(seed: number): Prng {
       cumulative += weights[i] ?? 0;
       if (target < cumulative) return i;
     }
-    // Only reachable through floating-point drift at the very top of the range.
     return weights.length - 1;
   };
 
   return { nextUint32, nextFloat, nextInt, nextExponentialGap, nextWeightedIndex };
 }
 
-/**
- * Derives a stable sub-seed from a seed and a label, so independent parts of a scenario can
- * draw from separate streams without one shifting the other. Used to keep the passenger stream
- * unaffected by anything else that might want randomness later.
- */
+/** Separate sub-streams per label, so nothing else wanting randomness can shift the demand. */
 export function deriveSeed(seed: number, label: string): number {
   let hash = seed | 0;
   for (let i = 0; i < label.length; i += 1) {

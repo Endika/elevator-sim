@@ -1,11 +1,4 @@
-/**
- * Things that must be true of any run, under any algorithm. Checked in tests rather than
- * asserted in production code, except for the ones the simulation cannot recover from — those
- * throw where they happen.
- *
- * The point of these is that a dispatcher bug should surface as a failed invariant, not as a
- * plausible-looking number nobody questions.
- */
+/** Must hold for any run under any algorithm, so a dispatcher bug fails loudly. */
 
 import type { PassengerStream } from '../traffic/PassengerStream';
 import type { SimResult } from './types';
