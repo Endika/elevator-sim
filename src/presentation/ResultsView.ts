@@ -52,7 +52,8 @@ export class ResultsView {
           class: 'mt-3 text-xs text-slate-500',
           text:
             `Averages over ${result.seeds} seeds, with the spread between seeds in brackets. ` +
-            `Baseline: ${result.baseline}.`,
+            `Every difference is measured against ${result.baseline}, the algorithm most single-car ` +
+            'lifts actually run — being the yardstick is not the same as winning.',
         }),
       ]),
       el('div', { class: CARD }, [
@@ -79,31 +80,49 @@ export class ResultsView {
   private table(result: ExperimentResult): HTMLElement {
     const header = el('tr', {}, [
       cell('th', 'algorithm', 'text-left'),
+      cell('th', 'vs baseline', 'text-left'),
       ...COLUMNS.map(([, label]) => cell('th', label, 'text-right')),
     ]);
 
-    const rows = [...result.aggregates]
-      .sort((a, b) => (a.means.waitMean ?? 0) - (b.means.waitMean ?? 0))
-      .map((aggregate) => {
-        const isBaseline = aggregate.dispatcher === result.baseline;
-        return el('tr', { class: isBaseline ? 'bg-slate-800/40' : '' }, [
+    const verdicts = new Map(
+      result.comparisons
+        .filter((comparison) => comparison.metric === 'waitMean')
+        .map((comparison) => [comparison.candidate, comparison.verdict]),
+    );
+
+    const ranked = [...result.aggregates].sort(
+      (a, b) => (a.means.waitMean ?? 0) - (b.means.waitMean ?? 0),
+    );
+
+    const rows = ranked.map((aggregate, index) => {
+      const isBaseline = aggregate.dispatcher === result.baseline;
+      // The winner is what the reader is looking for. Highlighting the baseline instead — which
+      // is only ever the yardstick — reads as "this one won" and is exactly backwards.
+      const isBest = index === 0;
+
+      return el('tr', { class: isBest ? 'bg-amber-500/10' : '' }, [
+        el('td', { class: 'px-2 py-2 text-left font-medium text-slate-200' }, [
+          aggregate.dispatcher,
+          isBest ? badge('best', 'bg-amber-500 text-slate-950') : null,
+          isBaseline ? badge('baseline', 'border border-slate-600 text-slate-400') : null,
+        ]),
+        el('td', { class: 'px-2 py-2 text-left' }, [
+          isBaseline
+            ? el('span', { class: 'text-slate-600', text: '—' })
+            : verdict(verdicts, aggregate.dispatcher),
+        ]),
+        ...COLUMNS.map(([key]) =>
           cell(
             'td',
-            isBaseline ? `${aggregate.dispatcher} (baseline)` : aggregate.dispatcher,
-            'text-left font-medium text-slate-200',
+            format(key, aggregate.means[key] ?? 0, aggregate.sds[key] ?? 0),
+            'text-right tabular-nums',
           ),
-          ...COLUMNS.map(([key]) =>
-            cell(
-              'td',
-              format(key, aggregate.means[key] ?? 0, aggregate.sds[key] ?? 0),
-              'text-right tabular-nums',
-            ),
-          ),
-        ]);
-      });
+        ),
+      ]);
+    });
 
     return el('div', { class: 'overflow-x-auto' }, [
-      el('table', { class: 'w-full min-w-[720px] text-sm text-slate-400' }, [
+      el('table', { class: 'w-full min-w-[820px] text-sm text-slate-400' }, [
         el('thead', { class: 'border-b border-slate-700 text-xs uppercase tracking-wide' }, [
           header,
         ]),
@@ -111,6 +130,24 @@ export class ResultsView {
       ]),
     ]);
   }
+}
+
+function badge(text: string, tone: string): HTMLElement {
+  return el('span', {
+    class: `ml-2 rounded px-1.5 py-0.5 align-middle text-[10px] font-semibold uppercase ${tone}`,
+    text,
+  });
+}
+
+const VERDICT_TONE: Record<string, string> = {
+  better: 'text-emerald-400',
+  worse: 'text-rose-400',
+  indistinguishable: 'text-slate-500',
+};
+
+function verdict(verdicts: ReadonlyMap<string, string>, dispatcher: string): HTMLElement {
+  const value = verdicts.get(dispatcher) ?? 'indistinguishable';
+  return el('span', { class: VERDICT_TONE[value] ?? 'text-slate-500', text: value });
 }
 
 function heading(title: string): HTMLElement {
