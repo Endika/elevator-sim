@@ -1,14 +1,15 @@
+import { SweepClient } from './infrastructure/worker/SweepClient';
+import { App } from './presentation/App';
 import './presentation/styles/main.css';
 
-const app = document.querySelector<HTMLDivElement>('#app');
+const root = document.querySelector<HTMLDivElement>('#app');
 
-if (app) {
-  app.innerHTML = `
-    <main class="mx-auto max-w-3xl p-6">
-      <h1 class="text-2xl font-semibold">elevator-sim</h1>
-      <p class="mt-2 text-slate-600">
-        Describe a building, get the dispatch algorithm comparison. UI lands in milestone 3.
-      </p>
-    </main>
-  `;
+if (root) {
+  const sweeps = new SweepClient(
+    () =>
+      new Worker(new URL('./infrastructure/worker/sweep.worker.ts', import.meta.url), {
+        type: 'module',
+      }),
+  );
+  new App(root, sweeps, window.location.search);
 }

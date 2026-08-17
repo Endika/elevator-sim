@@ -1,0 +1,131 @@
+import type { ExperimentResult } from '../application/Experiment';
+import type { Scenario } from '../application/Scenario';
+import { verdictOf } from '../application/Verdict';
+import { pairedDifferenceChart, waitByFloorChart } from './charts';
+import { el, replace } from './dom';
+
+const COLUMNS = [
+  ['waitMean', 'mean wait'],
+  ['waitP95', '95th percentile'],
+  ['waitWorst', 'worst wait'],
+  ['journeyMean', 'mean total'],
+  ['overThresholdShare', 'over 60 s'],
+  ['leftBehind', 'left behind'],
+  ['carStarts', 'starts'],
+  ['carDistance', 'metres'],
+] as const;
+
+const CARD = 'rounded-lg border border-slate-800 bg-slate-900/50 p-4';
+
+export class ResultsView {
+  readonly element = el('section', { class: 'space-y-6' });
+
+  clear(message: string): void {
+    replace(this.element, [el('p', { class: 'text-sm text-slate-500', text: message })]);
+  }
+
+  showError(message: string): void {
+    replace(this.element, [
+      el('div', { class: 'rounded-lg border border-rose-800 bg-rose-950/40 p-4' }, [
+        el('p', { class: 'font-medium text-rose-300', text: 'The simulation stopped' }),
+        el('p', { class: 'mt-1 text-sm text-rose-200', text: message }),
+      ]),
+    ]);
+  }
+
+  show(scenario: Scenario, result: ExperimentResult): void {
+    const verdict = verdictOf(scenario, result);
+
+    replace(this.element, [
+      el('div', { class: `${CARD} border-amber-700/60 bg-amber-950/20` }, [
+        el('h2', { class: 'text-xl font-semibold text-amber-300', text: verdict.headline }),
+        el(
+          'ul',
+          { class: 'mt-3 space-y-1.5 text-sm text-slate-300' },
+          verdict.points.map((point) => el('li', { text: `— ${point}` })),
+        ),
+      ]),
+      el('div', { class: CARD }, [
+        heading('Every algorithm, side by side'),
+        this.table(result),
+        el('p', {
+          class: 'mt-3 text-xs text-slate-500',
+          text:
+            `Averages over ${result.seeds} seeds, with the spread between seeds in brackets. ` +
+            `Baseline: ${result.baseline}.`,
+        }),
+      ]),
+      el('div', { class: CARD }, [
+        heading('Difference from the baseline'),
+        el('p', {
+          class: 'mb-3 text-xs text-slate-500',
+          text:
+            'Each bar is a 95% interval on the seed-by-seed difference. A bar crossing the dashed ' +
+            'line means the two algorithms are indistinguishable on that measure.',
+        }),
+        pairedDifferenceChart(result.comparisons),
+      ]),
+      el('div', { class: CARD }, [
+        heading('Mean wait by floor'),
+        el('p', {
+          class: 'mb-3 text-xs text-slate-500',
+          text: 'Starvation of the far floors shows up here and nowhere else.',
+        }),
+        waitByFloorChart(result.aggregates),
+      ]),
+    ]);
+  }
+
+  private table(result: ExperimentResult): HTMLElement {
+    const header = el('tr', {}, [
+      cell('th', 'algorithm', 'text-left'),
+      ...COLUMNS.map(([, label]) => cell('th', label, 'text-right')),
+    ]);
+
+    const rows = [...result.aggregates]
+      .sort((a, b) => (a.means.waitMean ?? 0) - (b.means.waitMean ?? 0))
+      .map((aggregate) => {
+        const isBaseline = aggregate.dispatcher === result.baseline;
+        return el('tr', { class: isBaseline ? 'bg-slate-800/40' : '' }, [
+          cell(
+            'td',
+            isBaseline ? `${aggregate.dispatcher} (baseline)` : aggregate.dispatcher,
+            'text-left font-medium text-slate-200',
+          ),
+          ...COLUMNS.map(([key]) =>
+            cell(
+              'td',
+              format(key, aggregate.means[key] ?? 0, aggregate.sds[key] ?? 0),
+              'text-right tabular-nums',
+            ),
+          ),
+        ]);
+      });
+
+    return el('div', { class: 'overflow-x-auto' }, [
+      el('table', { class: 'w-full min-w-[720px] text-sm text-slate-400' }, [
+        el('thead', { class: 'border-b border-slate-700 text-xs uppercase tracking-wide' }, [
+          header,
+        ]),
+        el('tbody', { class: 'divide-y divide-slate-800' }, rows),
+      ]),
+    ]);
+  }
+}
+
+function heading(title: string): HTMLElement {
+  return el('h3', { class: 'mb-3 font-semibold text-slate-200', text: title });
+}
+
+function cell(tag: 'td' | 'th', value: string, classes: string): HTMLElement {
+  return el(tag, { class: `px-2 py-2 ${classes}`, text: value });
+}
+
+function format(key: string, value: number, sd: number): string {
+  if (!Number.isFinite(value)) return '—';
+  if (key === 'overThresholdShare') return `${(value * 100).toFixed(0)}%`;
+  if (key === 'carDistance') return value.toFixed(0);
+  if (key === 'carStarts' || key === 'leftBehind') return value.toFixed(1);
+  const spread = Number.isFinite(sd) ? ` (±${sd.toFixed(1)})` : '';
+  return `${value.toFixed(1)}${spread}`;
+}

@@ -1,13 +1,15 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as {
   version: string;
 };
 
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/elevator-sim/' : '/',
+export default defineConfig({
+  // Unconditional, so dev, preview and Pages all serve from the same path and a base mismatch
+  // cannot silently hand the browser HTML where it asked for a module.
+  base: '/elevator-sim/',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
   },
@@ -27,4 +29,4 @@ export default defineConfig(({ command }) => ({
     globals: true,
     environment: 'jsdom',
   },
-}));
+});

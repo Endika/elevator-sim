@@ -1,9 +1,10 @@
 import type { Dispatcher } from '../ports/Dispatcher';
 import { collective } from './Collective';
+import { etd } from './Etd';
 import { fcfs } from './Fcfs';
 import { nearestCar } from './NearestCar';
 
-export const DISPATCHERS = { fcfs, 'nearest-car': nearestCar, collective } as const;
+export const DISPATCHERS = { fcfs, 'nearest-car': nearestCar, collective, etd } as const;
 
 export type DispatcherName = keyof typeof DISPATCHERS;
 
