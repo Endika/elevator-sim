@@ -23,11 +23,13 @@ export const RESIDENTIAL_CAR: CarSpec = {
   capacity: 6,
   // ESTIMATE — 1.0 m/s is ordinary for a low-rise block; no citable table found.
   ratedSpeed: 1.0,
-  // SOURCED — 0.81 m/s² measured on a real installation (S1, Table 1). Acceleration is
-  // limited by comfort rather than by rise, so it carries over to a slower car.
-  acceleration: 0.81,
-  // SOURCED — 0.51 m/s³, same measurement (S1, Table 1).
-  jerk: 0.51,
+  // ESTIMATE — and NOT the measured 0.81 m/s² from S1. That figure comes from a 3.97 m/s tower
+  // lift, and pasting it onto a 1 m/s car is physically incoherent: ramping to 0.81 m/s² and
+  // back costs a²/j = 1.29 m/s of speed, more than this car's rated speed, so the acceleration
+  // could never be reached. A slow car needs a gentler pair. Constraint: a ≤ √(v·j).
+  acceleration: 0.6,
+  // ESTIMATE — 0.8 m/s³ keeps √(v·j) = 0.89 comfortably above the acceleration above.
+  jerk: 0.8,
   // SOURCED — 2 s appears as an example value in traffic analysis material (S3). Example,
   // not standard.
   doorOpenTime: 2.0,
@@ -51,7 +53,7 @@ export const OFFICE_CAR: CarSpec = {
   capacity: 13,
   // ESTIMATE — 1.6 m/s for a mid-rise group.
   ratedSpeed: 1.6,
-  // SOURCED — S1, Table 1.
+  // SOURCED — S1, Table 1. Physically coherent here: √(v·j) = 0.90 ≥ 0.81.
   acceleration: 0.81,
   // SOURCED — S1, Table 1.
   jerk: 0.51,
