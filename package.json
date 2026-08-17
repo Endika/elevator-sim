@@ -22,7 +22,8 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "format:check": "biome format ."
+    "format:check": "biome format .",
+    "sweep": "tsx scripts/sweep.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.6",
@@ -31,6 +32,7 @@
     "jsdom": "^30.0.1",
     "postcss": "^8.5.25",
     "tailwindcss": "^4.3.1",
+    "tsx": "^4.23.12",
     "typescript": "^7.0.2",
     "vite": "^8.2.0",
     "vitest": "^4.1.10"

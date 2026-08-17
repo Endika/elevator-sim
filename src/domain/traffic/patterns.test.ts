@@ -47,9 +47,33 @@ describe('trip kinds by pattern', () => {
     for (let i = 0; i < draws; i += 1) {
       if (drawTripKind('residential-sparse', prng) === 'interfloor') interfloor += 1;
     }
-    // Declared assumption in patterns.ts is 10%.
-    expect(interfloor / draws).toBeGreaterThan(0.09);
-    expect(interfloor / draws).toBeLessThan(0.11);
+    // Declared assumption in patterns.ts is 4%.
+    expect(interfloor / draws).toBeGreaterThan(0.03);
+    expect(interfloor / draws).toBeLessThan(0.05);
+  });
+
+  it('gives office lunch more interfloor traffic than a block of flats', () => {
+    const share = (pattern: 'lunch' | 'residential-sparse'): number => {
+      const prng = createPrng(3);
+      let interfloor = 0;
+      for (let i = 0; i < 20_000; i += 1) {
+        if (drawTripKind(pattern, prng) === 'interfloor') interfloor += 1;
+      }
+      return interfloor / 20_000;
+    };
+    expect(share('lunch')).toBeGreaterThan(share('residential-sparse') * 2);
+  });
+
+  it('makes every pattern produce a different morning', () => {
+    // Two patterns with identical mixes are the same pattern wearing two names, and the report
+    // silently prints the same numbers twice. This caught exactly that.
+    const streams = TRAFFIC_PATTERNS.map((pattern) => {
+      const prng = createPrng(7);
+      return Array.from({ length: 200 }, () => drawTrip(office, pattern, prng))
+        .map((trip) => `${trip.kind}${trip.origin}>${trip.destination}`)
+        .join('|');
+    });
+    expect(new Set(streams).size).toBe(TRAFFIC_PATTERNS.length);
   });
 });
 

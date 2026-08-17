@@ -1,17 +1,18 @@
 import type { FloorId } from '../config/BuildingConfig';
 import type { CarView, DispatchContext, HallCall } from '../ports/Dispatcher';
 
+/** Floors other cars have already taken responsibility for. */
+export function claimedByOthers(car: CarView, context: DispatchContext): ReadonlySet<FloorId> {
+  return new Set(context.cars.filter((other) => other.index !== car.index).flatMap(claimOf));
+}
+
 /**
- * Which hall calls this car owns. Shared by every algorithm so they differ only in how they
- * order their own stops, never in how work is shared out.
- *
- * A floor another car is already travelling to is off the table — without that, two cars chase
- * one call and the second arrives to an empty landing. Proper group assignment is T12.
+ * Which hall calls this car owns. Shared by every algorithm so they differ only in how they order
+ * their own stops, never in how work is shared out. A floor another car has claimed is off the
+ * table — without that, two cars chase one call and the second arrives to an empty landing.
  */
 export function callsFor(car: CarView, context: DispatchContext): readonly HallCall[] {
-  const claimed = new Set(
-    context.cars.filter((other) => other.index !== car.index).flatMap(claimOf),
-  );
+  const claimed = claimedByOthers(car, context);
 
   // A full car is no candidate: it cannot pick anybody up, and letting it hold a call means the
   // call is never handed to a car that could. The asking car counts even mid-door-cycle, since

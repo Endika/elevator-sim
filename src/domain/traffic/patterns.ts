@@ -12,12 +12,13 @@ export interface Trip {
 }
 
 /**
- * DECLARED ASSUMPTION, not a sourced figure: lunch and residential traffic are treated as
- * balanced up and down with a tenth interfloor.
+ * DECLARED ASSUMPTIONS, not sourced figures. Both are balanced up and down; what separates them is
+ * how much traffic never touches the entrance. Office workers cross between floors at lunch;
+ * people in a block of flats rarely visit each other by lift.
  */
 const MIXES: Record<'lunch' | 'residential-sparse', Record<TripKind, number>> = {
-  lunch: { up: 0.45, down: 0.45, interfloor: 0.1 },
-  'residential-sparse': { up: 0.45, down: 0.45, interfloor: 0.1 },
+  lunch: { up: 0.4, down: 0.4, interfloor: 0.2 },
+  'residential-sparse': { up: 0.48, down: 0.48, interfloor: 0.04 },
 };
 
 function pickUniform(options: readonly Floor[], prng: Prng, what: string): FloorId {
