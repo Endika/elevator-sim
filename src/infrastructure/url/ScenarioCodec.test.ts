@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SCENARIO, scenarioFromPreset } from '../../application/Scenario';
+import { PRESET_NAMES } from '../../domain/config/presets';
 import { decodeScenario, encodeScenario } from './ScenarioCodec';
 
 describe('a scenario survives the round trip', () => {
@@ -8,7 +9,7 @@ describe('a scenario survives the round trip', () => {
   });
 
   it('comes back identical for every preset', () => {
-    for (const name of ['residential-low', 'office-mid', 'tower', 'my-building'] as const) {
+    for (const name of PRESET_NAMES) {
       const scenario = scenarioFromPreset(name);
       expect(decodeScenario(encodeScenario(scenario))).toEqual(scenario);
     }

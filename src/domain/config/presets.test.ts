@@ -18,12 +18,9 @@ describe('presets', () => {
     expect(entrances).toEqual(['B2', 'G']);
   });
 
-  it('describes the real building: 7 floors, no basement, one car, stays put', () => {
-    const mine = PRESETS['my-building'];
-    expect(mine.floors.filter((floor) => floor.id > 0)).toHaveLength(7);
-    expect(mine.floors.filter((floor) => floor.id < 0)).toHaveLength(0);
-    expect(mine.cars).toHaveLength(1);
-    expect(mine.idlePolicy).toBe('stay-put');
+  it('ships starting points rather than one particular building', () => {
+    // A public tool has no business carrying one person's address as a preset.
+    expect(PRESET_NAMES).toEqual(['residential-low', 'office-mid', 'tower']);
   });
 });
 

@@ -13,6 +13,13 @@ const IDLE_LABELS: Record<IdlePolicy, string> = {
   'park-at-middle': 'Waits halfway up',
 };
 
+/** Starting points, described so somebody can recognise their own building in the list. */
+const PRESET_LABELS: Record<PresetName, string> = {
+  'residential-low': 'Block of flats — 7 floors, 1 lift',
+  'office-mid': 'Office — 12 floors, 3 lifts',
+  tower: 'Tower — 25 floors and a garage, 6 lifts',
+};
+
 const PATTERN_LABELS: Record<TrafficPattern, string> = {
   'up-peak': 'Morning rush — everyone arriving and going up',
   'down-peak': 'Evening rush — everyone leaving',
@@ -95,8 +102,8 @@ export class FormView {
 
   private presetRow(): HTMLElement {
     const select = el('select', { class: FIELD, 'aria-label': 'Preset building' }, [
-      el('option', { value: '', text: 'Start from a preset…' }),
-      ...PRESET_NAMES.map((name) => el('option', { value: name, text: name })),
+      el('option', { value: '', text: 'Start from a similar building…' }),
+      ...PRESET_NAMES.map((name) => el('option', { value: name, text: PRESET_LABELS[name] })),
     ]);
     select.addEventListener('change', () => {
       if (select.value) this.handlers.onPreset(scenarioFromPreset(select.value as PresetName));
