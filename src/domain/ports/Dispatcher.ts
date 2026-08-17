@@ -20,6 +20,7 @@ export interface CarView {
   readonly direction: Direction | null;
   readonly onboard: number;
   readonly capacity: number;
+  /** Destinations of the passengers aboard, in the order they boarded. */
   readonly carCalls: readonly FloorId[];
   readonly idleSince: number | null;
 }

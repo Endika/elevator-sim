@@ -128,7 +128,7 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
     direction: car.direction,
     onboard: car.onboard.length,
     capacity: car.spec.capacity,
-    carCalls: [...new Set(car.onboard.map((p) => p.destination))].sort((a, b) => a - b),
+    carCalls: [...new Set(car.onboard.map((p) => p.destination))],
     idleSince: car.idleSince,
   });
 
