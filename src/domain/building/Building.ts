@@ -48,6 +48,16 @@ export class Building {
     return this.config.floors.filter((floor) => floor.isEntrance);
   }
 
+  /**
+   * The street door, not the garage. A building with a basement entrance has two ways in, but the
+   * main terminal — where a lift parks and what the up-peak calculation is built around — is the
+   * ground floor. Taking the lowest entrance instead sends the car to wait in the car park.
+   */
+  get mainEntrance(): Floor | null {
+    const entrances = this.entrances;
+    return entrances.find((floor) => floor.id === 0) ?? entrances[0] ?? null;
+  }
+
   get occupied(): readonly Floor[] {
     return this.config.floors.filter((floor) => floor.population > 0);
   }

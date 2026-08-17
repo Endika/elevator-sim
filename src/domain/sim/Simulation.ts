@@ -77,7 +77,7 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
   const idlePolicy = options.idlePolicy ?? building.idlePolicy;
   const horizon = stream.durationSeconds + (options.drainSeconds ?? DEFAULT_DRAIN_SECONDS);
 
-  const startFloor = (building.entrances[0] ?? building.floors[0])?.id;
+  const startFloor = (building.mainEntrance ?? building.floors[0])?.id;
   if (startFloor === undefined) throw new Error('The building has no floors to start from.');
 
   const cars: CarState[] = building.cars.map((spec, index) => ({

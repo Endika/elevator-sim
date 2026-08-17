@@ -40,6 +40,17 @@ describe('queries', () => {
   });
 });
 
+describe('the main terminal', () => {
+  it('is the street door, not the garage, when a building has both', () => {
+    expect(tower.entrances.map((f) => f.label)).toEqual(['B2', 'G']);
+    expect(tower.mainEntrance?.label).toBe('G');
+  });
+
+  it('falls back to the only entrance there is', () => {
+    expect(residential.mainEntrance?.label).toBe('G');
+  });
+});
+
 describe('unknown floors', () => {
   it('reports whether a floor exists', () => {
     expect(residential.has(3)).toBe(true);

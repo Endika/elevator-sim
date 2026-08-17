@@ -51,7 +51,7 @@ export function analyseUpPeak({ building, passengersPerTrip }: UpPeakInputs): Up
     throw new Error(`Passengers per trip must be positive; got ${passengersPerTrip}.`);
   }
 
-  const terminal = building.entrances[0];
+  const terminal = building.mainEntrance;
   if (!terminal) throw new Error('The up-peak calculation needs a main terminal floor.');
 
   const served = building.floors.filter((floor) => floor.id > terminal.id && floor.population > 0);
