@@ -1,0 +1,38 @@
+{
+  "name": "elevator-sim",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Configurable elevator simulator: compare dispatch algorithms for any building",
+  "license": "MIT",
+  "author": "Endika Iglesias",
+  "homepage": "https://endika.github.io/elevator-sim/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Endika/elevator-sim.git"
+  },
+  "bugs": "https://github.com/Endika/elevator-sim/issues",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.6",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.1.2",
+    "jsdom": "^30.0.1",
+    "postcss": "^8.5.25",
+    "tailwindcss": "^4.3.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.0",
+    "vitest": "^4.1.10"
+  }
+}
