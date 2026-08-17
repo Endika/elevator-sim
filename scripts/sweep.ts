@@ -1,5 +1,5 @@
 import { writeFileSync } from 'node:fs';
-import { runExperiment } from '../src/application/Experiment';
+import { experimentSpecOf, runExperiment } from '../src/application/Experiment';
 import { buildingOf, scenarioFromPreset, trafficConfigOf } from '../src/application/Scenario';
 import { verdictOf } from '../src/application/Verdict';
 import type { IdlePolicy } from '../src/domain/config/BuildingConfig';
@@ -93,14 +93,7 @@ for (const pattern of patterns) {
     const building = buildingOf(scenario);
     const traffic = trafficConfigOf(scenario);
 
-    const result = runExperiment({
-      building,
-      traffic,
-      dispatchers: DISPATCHER_NAMES,
-      idlePolicy,
-      seeds: options.seeds,
-      baseline: 'collective',
-    });
+    const result = runExperiment(experimentSpecOf(scenario, DISPATCHER_NAMES));
     const verdict = verdictOf(scenario, result);
 
     // The clairvoyant reference runs outside the experiment: it is handed the stream, so it is

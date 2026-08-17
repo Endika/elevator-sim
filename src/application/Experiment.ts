@@ -1,12 +1,13 @@
 import type { Building } from '../domain/building/Building';
 import type { IdlePolicy } from '../domain/config/BuildingConfig';
 import type { TrafficConfig } from '../domain/config/TrafficConfig';
-import { DISPATCHERS, type DispatcherName } from '../domain/dispatch/registry';
+import { BASELINE, DISPATCHERS, type DispatcherName } from '../domain/dispatch/registry';
 import { LOWER_IS_BETTER, type Metrics, metricsOf } from '../domain/metrics/Metrics';
 import { comparePaired, type PairedResult } from '../domain/metrics/PairedComparison';
 import { mean, standardDeviation } from '../domain/metrics/Percentiles';
 import { runSimulation } from '../domain/sim/Simulation';
 import { generateStream } from '../domain/traffic/PassengerStream';
+import { buildingOf, type Scenario, trafficConfigOf } from './Scenario';
 
 export interface ExperimentSpec {
   readonly building: Building;
@@ -36,6 +37,25 @@ export interface ExperimentResult {
 }
 
 export type Progress = (done: number, total: number) => void;
+
+/**
+ * The one place a scenario becomes an experiment. The browser worker and the command line both go
+ * through here, which is what makes "the same scenario gives the same numbers in both" true by
+ * construction rather than by coincidence.
+ */
+export function experimentSpecOf(
+  scenario: Scenario,
+  dispatchers: readonly DispatcherName[] = scenario.dispatchers,
+): ExperimentSpec {
+  return {
+    building: buildingOf(scenario),
+    traffic: trafficConfigOf(scenario),
+    dispatchers,
+    idlePolicy: scenario.idlePolicy,
+    seeds: scenario.seeds,
+    baseline: dispatchers.includes(BASELINE) ? BASELINE : (dispatchers[0] ?? BASELINE),
+  };
+}
 
 const NUMERIC_METRICS = [...LOWER_IS_BETTER, 'deliveredPercentPer5Min'] as const;
 

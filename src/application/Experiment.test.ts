@@ -3,7 +3,8 @@ import { Building } from '../domain/building/Building';
 import { OFFICE_MID, RESIDENTIAL_LOW } from '../domain/config/presets';
 import type { TrafficConfig } from '../domain/config/TrafficConfig';
 import { generateStream } from '../domain/traffic/PassengerStream';
-import { runExperiment } from './Experiment';
+import { experimentSpecOf, runExperiment } from './Experiment';
+import { DEFAULT_SCENARIO, trafficConfigOf } from './Scenario';
 
 const residential = Building.of(RESIDENTIAL_LOW);
 const office = Building.of(OFFICE_MID);
@@ -147,6 +148,30 @@ describe('guard rails', () => {
       },
     );
     expect(seen).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+});
+
+describe('the browser and the command line cannot drift apart', () => {
+  it('derives the whole experiment from the scenario alone', () => {
+    const scenario = { ...DEFAULT_SCENARIO, seeds: 4 };
+    const spec = experimentSpecOf(scenario);
+    expect(spec.seeds).toBe(4);
+    expect(spec.idlePolicy).toBe(scenario.idlePolicy);
+    expect(spec.dispatchers).toEqual(scenario.dispatchers);
+    expect(spec.baseline).toBe('collective');
+    expect(spec.traffic).toEqual(trafficConfigOf(scenario));
+  });
+
+  it('gives identical results for the same scenario, whoever asks', () => {
+    const scenario = { ...DEFAULT_SCENARIO, seeds: 4 };
+    expect(runExperiment(experimentSpecOf(scenario))).toEqual(
+      runExperiment(experimentSpecOf(scenario)),
+    );
+  });
+
+  it('falls back to a baseline it is actually running', () => {
+    const scenario = { ...DEFAULT_SCENARIO, seeds: 4, dispatchers: ['fcfs', 'etd'] as const };
+    expect(experimentSpecOf(scenario).baseline).toBe('fcfs');
   });
 });
 
