@@ -1,5 +1,10 @@
 import { DEFAULT_SCENARIO, type Scenario } from '../../application/Scenario';
-import { IDLE_POLICIES, type IdlePolicy } from '../../domain/config/BuildingConfig';
+import {
+  IDLE_POLICIES,
+  type IdlePolicy,
+  LANDING_BUTTONS,
+  type LandingButtons,
+} from '../../domain/config/BuildingConfig';
 import { TRAFFIC_PATTERNS, type TrafficPattern } from '../../domain/config/TrafficConfig';
 import { DISPATCHER_NAMES, type DispatcherName } from '../../domain/dispatch/registry';
 
@@ -40,6 +45,7 @@ const KEYS = {
   stairsAbleShare: 'sa',
   roundsPerHour: 'rh',
   roundStops: 'rs',
+  landingButtons: 'lb',
 } as const;
 
 export function encodeScenario(scenario: Scenario): string {
@@ -64,6 +70,7 @@ export function encodeScenario(scenario: Scenario): string {
   params.set(KEYS.stairsAbleShare, String(scenario.stairsAbleShare));
   params.set(KEYS.roundsPerHour, String(scenario.roundsPerHour));
   params.set(KEYS.roundStops, String(scenario.roundStops));
+  params.set(KEYS.landingButtons, scenario.landingButtons);
   params.set(KEYS.capacity, String(scenario.car.capacity));
   params.set(KEYS.ratedSpeed, String(scenario.car.ratedSpeed));
   params.set(KEYS.acceleration, String(scenario.car.acceleration));
@@ -140,6 +147,11 @@ export function decodeScenario(query: string): Scenario {
     stairsAbleShare: share(KEYS.stairsAbleShare, DEFAULT_SCENARIO.stairsAbleShare),
     roundsPerHour: nonNegative(KEYS.roundsPerHour, DEFAULT_SCENARIO.roundsPerHour),
     roundStops: Math.round(nonNegative(KEYS.roundStops, DEFAULT_SCENARIO.roundStops)),
+    landingButtons: oneOf<LandingButtons>(
+      KEYS.landingButtons,
+      LANDING_BUTTONS,
+      DEFAULT_SCENARIO.landingButtons,
+    ),
     car: {
       capacity: number(KEYS.capacity, DEFAULT_SCENARIO.car.capacity, { integer: true }),
       ratedSpeed: number(KEYS.ratedSpeed, DEFAULT_SCENARIO.car.ratedSpeed),

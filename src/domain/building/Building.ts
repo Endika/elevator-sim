@@ -1,4 +1,11 @@
-import type { BuildingConfig, CarSpec, Floor, FloorId, IdlePolicy } from '../config/BuildingConfig';
+import type {
+  BuildingConfig,
+  CarSpec,
+  Floor,
+  FloorId,
+  IdlePolicy,
+  LandingButtons,
+} from '../config/BuildingConfig';
 import { parseBuilding } from '../config/BuildingConfig';
 
 export class Building {
@@ -30,6 +37,16 @@ export class Building {
 
   get destinationEntry(): boolean {
     return this.config.destinationEntry;
+  }
+
+  get landingButtons(): LandingButtons {
+    return this.config.landingButtons;
+  }
+
+  /** True where the landing offers no way to say you want to go up. */
+  singleButtonAt(floor: FloorId): boolean {
+    const main = this.mainEntrance;
+    return this.landingButtons === 'down-only' && main !== null && floor > main.id;
   }
 
   get idlePolicy(): IdlePolicy {

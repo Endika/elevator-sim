@@ -42,6 +42,17 @@ export interface CarSpec {
   readonly passengerTransferTime: number;
 }
 
+/**
+ * What the landings actually offer. `up-and-down` is full collective: two buttons everywhere, so
+ * the controller knows which way you want to go. `down-only` is down collective, the common
+ * arrangement in a block of flats — one button on every floor above the entrance, and up only in
+ * the basement. The controller then has no idea which way anybody wants to go, so people simply
+ * get in whatever arrives.
+ */
+export type LandingButtons = 'up-and-down' | 'down-only';
+
+export const LANDING_BUTTONS: readonly LandingButtons[] = ['up-and-down', 'down-only'];
+
 /** Crossable with any dispatch algorithm, deliberately not part of it. */
 export type IdlePolicy = 'stay-put' | 'return-to-entrance' | 'park-at-busiest' | 'park-at-middle';
 
@@ -58,6 +69,7 @@ export interface BuildingConfig {
   readonly cars: readonly CarSpec[];
   /** True when passengers enter their destination in the lobby instead of pressing up/down. */
   readonly destinationEntry: boolean;
+  readonly landingButtons: LandingButtons;
   readonly idlePolicy: IdlePolicy;
   /** Seconds of inactivity before the idle policy acts. */
   readonly idleDelaySeconds: number;
@@ -187,6 +199,13 @@ function validateIdle(building: BuildingConfig): string[] {
 
   if (building.idleDelaySeconds < 0 || !Number.isFinite(building.idleDelaySeconds)) {
     problems.push(`The idle delay is ${building.idleDelaySeconds} s; it cannot be negative.`);
+  }
+
+  if (!LANDING_BUTTONS.includes(building.landingButtons)) {
+    problems.push(
+      `"${building.landingButtons}" is not a landing arrangement. Pick one of: ` +
+        `${LANDING_BUTTONS.join(', ')}.`,
+    );
   }
 
   if (!IDLE_POLICIES.includes(building.idlePolicy)) {

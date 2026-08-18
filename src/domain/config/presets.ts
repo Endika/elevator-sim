@@ -53,6 +53,8 @@ export const RESIDENTIAL_LOW: BuildingConfig = {
   }),
   cars: cars(RESIDENTIAL_CAR, 1),
   destinationEntry: false,
+  // One button on every landing above the entrance, which is what a block of flats has.
+  landingButtons: 'down-only',
   idlePolicy: 'stay-put',
   idleDelaySeconds: 30,
 };
@@ -69,6 +71,7 @@ export const OFFICE_MID: BuildingConfig = {
   }),
   cars: cars(OFFICE_CAR, 3),
   destinationEntry: false,
+  landingButtons: 'up-and-down',
   idlePolicy: 'return-to-entrance',
   idleDelaySeconds: 60,
 };
@@ -85,6 +88,7 @@ export const TOWER: BuildingConfig = {
   }),
   cars: cars(TOWER_CAR, 6),
   destinationEntry: true,
+  landingButtons: 'up-and-down',
   idlePolicy: 'park-at-busiest',
   idleDelaySeconds: 60,
 };

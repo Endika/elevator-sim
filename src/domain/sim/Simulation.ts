@@ -133,10 +133,29 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
     idleSince: car.idleSince,
   });
 
-  /** Floor-then-direction order, so what a dispatcher sees never depends on Map iteration. */
+  /**
+   * Floor-then-direction order, so what a dispatcher sees never depends on Map iteration.
+   *
+   * On a landing with a single button the controller learns nothing about where anybody is going:
+   * everyone waiting shows up as one call in the only direction the button offers. That is down
+   * collective, and it is what most blocks of flats actually have.
+   */
   const hallCalls = (): HallCall[] =>
     building.floorIds.flatMap((floor) => {
       const queued = waiting.get(floor) ?? [];
+      if (queued.length === 0) return [];
+
+      if (building.singleButtonAt(floor)) {
+        return [
+          {
+            floor,
+            direction: 'down' as const,
+            since: Math.min(...queued.map((p) => p.arrivalTime)),
+            waiting: queued.length,
+          },
+        ];
+      }
+
       return (['up', 'down'] as const).flatMap((direction) => {
         const behind = queued.filter((p) => directionOf(p) === direction);
         if (behind.length === 0) return [];
@@ -282,7 +301,11 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
       if (journey) journey.arrivedAt = now + (position + 1) * tp;
     });
 
-    const direction = dispatcher.boardingDirection(viewOf(car), context());
+    // With one button on the landing nobody announced a direction, so everybody simply gets in
+    // whatever turned up — the controller had no way to sort them and neither do they.
+    const direction = building.singleButtonAt(car.floor)
+      ? 'any'
+      : dispatcher.boardingDirection(viewOf(car), context());
     const queued = waiting.get(car.floor) ?? [];
     const wanted = queued.filter((p) => direction === 'any' || directionOf(p) === direction);
     // Whoever is left over squeezes in anyway if they are that sort and there is still room —

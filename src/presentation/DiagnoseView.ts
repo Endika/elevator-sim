@@ -98,6 +98,18 @@ export class DiagnoseView {
       );
     }
 
+    if (result.landingButtons === 'down-only') {
+      lines.push(
+        el('p', {
+          class: 'text-slate-400',
+          text:
+            'One button upstairs means down collective: your lift never learns which way you ' +
+            'want to go, so it cannot sail past you for facing the wrong direction. Set it in ' +
+            'the form above — it changes who gets in, not just who is called.',
+        }),
+      );
+    }
+
     if (result.idlePolicy) {
       lines.push(
         el('p', {

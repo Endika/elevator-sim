@@ -1,4 +1,4 @@
-import type { IdlePolicy } from '../config/BuildingConfig';
+import type { IdlePolicy, LandingButtons } from '../config/BuildingConfig';
 import type { DispatcherName } from '../dispatch/registry';
 import { DISPATCHER_NAMES } from '../dispatch/registry';
 
@@ -14,7 +14,10 @@ export interface BehaviourQuestion {
   readonly prompt: string;
   readonly detail: string;
   readonly consistentWith: readonly DispatcherName[];
-  readonly implies?: { readonly idlePolicy: IdlePolicy };
+  readonly implies?: {
+    readonly idlePolicy?: IdlePolicy;
+    readonly landingButtons?: LandingButtons;
+  };
   /** Set when a "yes" means this tool cannot model the installation faithfully. */
   readonly outOfScope?: string;
 }
@@ -45,6 +48,16 @@ export const QUESTIONS: readonly BehaviourQuestion[] = [
     prompt: 'Does it finish every call in one direction before turning round?',
     detail: 'A clean sweep up and then a clean sweep down is collective control at work.',
     consistentWith: ['collective', 'etd'],
+  },
+  {
+    id: 'one-button-upstairs',
+    prompt: 'On an upstairs landing, is there just one button rather than an up and a down?',
+    detail:
+      'The easiest thing in this list to check, and one of the most telling. One button is down ' +
+      'collective: the lift never learns which way you want to go, so it cannot pass you by for ' +
+      'going the wrong way — it simply collects whoever is there.',
+    consistentWith: [],
+    implies: { landingButtons: 'down-only' },
   },
   {
     id: 'destination-in-lobby',

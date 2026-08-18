@@ -1,4 +1,4 @@
-import type { IdlePolicy } from '../config/BuildingConfig';
+import type { IdlePolicy, LandingButtons } from '../config/BuildingConfig';
 import { DISPATCHER_NAMES, type DispatcherName } from '../dispatch/registry';
 import { type Answer, type BehaviourQuestion, QUESTIONS } from './BehaviourQuestions';
 
@@ -12,6 +12,12 @@ export interface Fingerprint {
   /** A question that would separate the leaders, if one exists. */
   readonly nextQuestion: BehaviourQuestion | null;
   readonly idlePolicy: IdlePolicy | null;
+  /**
+   * What the landings offer, when the answers reveal it. Worth more than it looks: a single button
+   * means the lift never learns your direction, so half the behaviours people blame on the
+   * algorithm are not the algorithm at all.
+   */
+  readonly landingButtons: LandingButtons | null;
   /** 0 to 1: how much of the available evidence was actually given. */
   readonly confidence: number;
 }
@@ -25,6 +31,7 @@ export function fingerprint(answers: ReadonlyMap<string, Answer>): Fingerprint {
   const scores = new Map<DispatcherName, number>(DISPATCHER_NAMES.map((name) => [name, 0]));
   let answered = 0;
   let idlePolicy: IdlePolicy | null = null;
+  let landingButtons: LandingButtons | null = null;
 
   for (const question of QUESTIONS) {
     const answer = answers.get(question.id);
@@ -32,7 +39,10 @@ export function fingerprint(answers: ReadonlyMap<string, Answer>): Fingerprint {
     answered += 1;
 
     if (question.implies) {
-      if (answer === 'yes') idlePolicy = question.implies.idlePolicy;
+      if (answer === 'yes') {
+        idlePolicy = question.implies.idlePolicy ?? idlePolicy;
+        landingButtons = question.implies.landingButtons ?? landingButtons;
+      }
       continue;
     }
 
@@ -59,6 +69,7 @@ export function fingerprint(answers: ReadonlyMap<string, Answer>): Fingerprint {
     nextQuestion:
       ambiguous && best && runnerUp ? separator(answers, best.name, runnerUp.name) : null,
     idlePolicy,
+    landingButtons,
     confidence: scoring === 0 ? 0 : Math.min(1, answered / scoring),
   };
 }

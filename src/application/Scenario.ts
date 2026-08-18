@@ -1,5 +1,10 @@
 import { Building } from '../domain/building/Building';
-import type { BuildingConfig, CarSpec, IdlePolicy } from '../domain/config/BuildingConfig';
+import type {
+  BuildingConfig,
+  CarSpec,
+  IdlePolicy,
+  LandingButtons,
+} from '../domain/config/BuildingConfig';
 import { validateBuilding } from '../domain/config/BuildingConfig';
 import { RESIDENTIAL_CAR } from '../domain/config/PhysicsDefaults';
 import { floorStack, PRESETS, type PresetName } from '../domain/config/presets';
@@ -19,6 +24,7 @@ export interface Scenario {
   readonly peoplePerFloor: number;
   readonly cars: number;
   readonly destinationEntry: boolean;
+  readonly landingButtons: LandingButtons;
   readonly idlePolicy: IdlePolicy;
   readonly idleDelaySeconds: number;
   readonly pattern: TrafficPattern;
@@ -44,6 +50,7 @@ export const DEFAULT_SCENARIO: Scenario = {
   peoplePerFloor: 6,
   cars: 1,
   destinationEntry: false,
+  landingButtons: 'down-only',
   idlePolicy: 'stay-put',
   idleDelaySeconds: 30,
   pattern: 'residential-sparse',
@@ -75,6 +82,7 @@ export function scenarioFromPreset(name: PresetName): Scenario {
     peoplePerFloor: above[0]?.population ?? DEFAULT_SCENARIO.peoplePerFloor,
     cars: preset.cars.length,
     destinationEntry: preset.destinationEntry,
+    landingButtons: preset.landingButtons,
     idlePolicy: preset.idlePolicy,
     idleDelaySeconds: preset.idleDelaySeconds,
     car: preset.cars[0] ?? DEFAULT_SCENARIO.car,
@@ -96,6 +104,7 @@ export function buildingConfigOf(scenario: Scenario): BuildingConfig {
     floors,
     cars: Array.from({ length: scenario.cars }, () => scenario.car),
     destinationEntry: scenario.destinationEntry,
+    landingButtons: scenario.landingButtons,
     idlePolicy: scenario.idlePolicy,
     idleDelaySeconds: scenario.idleDelaySeconds,
   };

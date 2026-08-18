@@ -1,6 +1,11 @@
 import type { Scenario } from '../application/Scenario';
 import { scenarioFromPreset, validateScenario } from '../application/Scenario';
-import { IDLE_POLICIES, type IdlePolicy } from '../domain/config/BuildingConfig';
+import {
+  IDLE_POLICIES,
+  type IdlePolicy,
+  LANDING_BUTTONS,
+  type LandingButtons,
+} from '../domain/config/BuildingConfig';
 import { PRESET_NAMES, type PresetName } from '../domain/config/presets';
 import { TRAFFIC_PATTERNS, type TrafficPattern } from '../domain/config/TrafficConfig';
 import { DISPATCHER_NAMES, type DispatcherName } from '../domain/dispatch/registry';
@@ -18,6 +23,11 @@ const PRESET_LABELS: Record<PresetName, string> = {
   'residential-low': 'Block of flats — 7 floors, 1 lift',
   'office-mid': 'Office — 12 floors, 3 lifts',
   tower: 'Tower — 25 floors and a garage, 6 lifts',
+};
+
+const BUTTON_LABELS: Record<LandingButtons, string> = {
+  'up-and-down': 'Up and down — two buttons',
+  'down-only': 'Down only — one button (a block of flats)',
 };
 
 const PATTERN_LABELS: Record<TrafficPattern, string> = {
@@ -143,6 +153,21 @@ export class FormView {
     );
     idle.addEventListener('change', () => this.update({ idlePolicy: idle.value as IdlePolicy }));
 
+    const buttons = el(
+      'select',
+      { class: FIELD },
+      LANDING_BUTTONS.map((option) =>
+        el('option', {
+          value: option,
+          text: BUTTON_LABELS[option],
+          selected: option === this.scenario.landingButtons,
+        }),
+      ),
+    );
+    buttons.addEventListener('change', () =>
+      this.update({ landingButtons: buttons.value as LandingButtons }),
+    );
+
     const pattern = el(
       'select',
       { class: FIELD },
@@ -199,6 +224,16 @@ export class FormView {
           idle,
         ]),
         el('div', {}, [el('label', { class: LABEL, text: 'Traffic' }), pattern]),
+        el('div', {}, [
+          el('label', { class: LABEL, text: 'Buttons on an upstairs landing' }),
+          buttons,
+          el('p', {
+            class: 'mt-1 text-xs text-slate-500',
+            text:
+              'Two buttons is full collective. One is down collective, what most blocks of flats ' +
+              'have — and then the lift has no idea which way you want to go.',
+          }),
+        ]),
         this.number(
           'Demand, % of residents per 5 min',
           this.scenario.demandPercentPer5Min,

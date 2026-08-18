@@ -222,7 +222,33 @@ describe('the concierge and the courier', () => {
   });
 });
 
+describe('a single button on the landing changes what squeezing even means', () => {
+  it('makes the behaviour irrelevant, because nobody announced a direction', () => {
+    // On a down-collective landing there is no wrong direction to squeeze against: the controller
+    // never asked where you were going, so getting in is simply how it works.
+    const downOnly = Building.of({ ...RESIDENTIAL_LOW, landingButtons: 'down-only' });
+    const run = (boardsAnyDirection: boolean) =>
+      runSimulation({
+        building: downOnly,
+        stream: handMade([
+          person({ id: 1, origin: 0, destination: 5 }),
+          person({ id: 2, arrivalTime: 1, origin: 2, destination: 5 }),
+          person({ id: 3, arrivalTime: 1, origin: 2, destination: 0, boardsAnyDirection }),
+        ]),
+        dispatcher: collective,
+        idlePolicy: 'stay-put',
+      });
+
+    const boarded = (opportunist: boolean) =>
+      run(opportunist).journeys.find((j) => j.passengerId === 3)?.boardedAt;
+    expect(boarded(true)).toBe(boarded(false));
+  });
+});
+
 describe('squeezing into a car going the wrong way', () => {
+  // Needs two buttons on the landing, or there is no wrong direction to squeeze against.
+  const fullCollective = Building.of({ ...RESIDENTIAL_LOW, landingButtons: 'up-and-down' });
+
   // The car must actually stop at floor 2, or nobody there gets the chance to squeeze in — a car
   // that sails past is not an opportunity. So somebody on floor 2 is going up, which is what makes
   // it stop, and our subject standing next to them wants to go down.
@@ -235,13 +261,13 @@ describe('squeezing into a car going the wrong way', () => {
 
   it('gets them in sooner than waiting for the car to come back', () => {
     const squeezes = runSimulation({
-      building: residential,
+      building: fullCollective,
       stream: goingUp(true),
       dispatcher: collective,
       idlePolicy: 'stay-put',
     });
     const waits = runSimulation({
-      building: residential,
+      building: fullCollective,
       stream: goingUp(false),
       dispatcher: collective,
       idlePolicy: 'stay-put',
@@ -253,7 +279,7 @@ describe('squeezing into a car going the wrong way', () => {
 
   it('costs them a longer ride, since they go the wrong way first', () => {
     const squeezes = runSimulation({
-      building: residential,
+      building: fullCollective,
       stream: goingUp(true),
       dispatcher: collective,
       idlePolicy: 'stay-put',
@@ -261,7 +287,7 @@ describe('squeezing into a car going the wrong way', () => {
     const journey = squeezes.journeys.find((j) => j.passengerId === 3);
     if (!journey?.boardedAt || !journey.arrivedAt) throw new Error('expected a completed journey');
     const waits = runSimulation({
-      building: residential,
+      building: fullCollective,
       stream: goingUp(false),
       dispatcher: collective,
       idlePolicy: 'stay-put',
@@ -279,6 +305,7 @@ describe('squeezing into a car going the wrong way', () => {
   it('does not count them as left behind when the car was never serving them', () => {
     const full = Building.of({
       ...RESIDENTIAL_LOW,
+      landingButtons: 'up-and-down',
       cars: [{ ...RESIDENTIAL_CAR, capacity: 1 }],
     });
     const result = runSimulation({
