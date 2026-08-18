@@ -43,15 +43,28 @@ export interface CarSpec {
 }
 
 /**
- * What the landings actually offer. `up-and-down` is full collective: two buttons everywhere, so
- * the controller knows which way you want to go. `down-only` is down collective, the common
- * arrangement in a block of flats — one button on every floor above the entrance, and up only in
- * the basement. The controller then has no idea which way anybody wants to go, so people simply
- * get in whatever arrives.
+ * What the landings offer, using the names Barney gives them in *The History of Lift Traffic
+ * Control*:
+ *
+ * - `up-and-down` — full (directional) collective. Two buttons, so the controller knows which way
+ *   you want to go, and can pass you by for facing the wrong one.
+ * - `down-only` — down collective, or up-distributive down-collective. One button upstairs, and
+ *   every call above the entrance is taken to be a down call. A car travelling up stops only for
+ *   car calls. The standard arrangement for flats and car parks, where interfloor traffic is not
+ *   expected.
+ * - `single-any-direction` — non-directional collective. One button as well, but the car stops for
+ *   it whichever way it is going. Only acceptable on short travel.
+ *
+ * The difference between the two single-button types is visible from the landing: does a lift on
+ * its way up stop for you, or sail past?
  */
-export type LandingButtons = 'up-and-down' | 'down-only';
+export type LandingButtons = 'up-and-down' | 'down-only' | 'single-any-direction';
 
-export const LANDING_BUTTONS: readonly LandingButtons[] = ['up-and-down', 'down-only'];
+export const LANDING_BUTTONS: readonly LandingButtons[] = [
+  'up-and-down',
+  'down-only',
+  'single-any-direction',
+];
 
 /** Crossable with any dispatch algorithm, deliberately not part of it. */
 export type IdlePolicy = 'stay-put' | 'return-to-entrance' | 'park-at-busiest' | 'park-at-middle';

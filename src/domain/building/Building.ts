@@ -43,10 +43,16 @@ export class Building {
     return this.config.landingButtons;
   }
 
-  /** True where the landing offers no way to say you want to go up. */
+  /** True where the landing offers no way to say which direction you want. */
   singleButtonAt(floor: FloorId): boolean {
+    if (this.landingButtons === 'single-any-direction') return true;
     const main = this.mainEntrance;
     return this.landingButtons === 'down-only' && main !== null && floor > main.id;
+  }
+
+  /** True where a single-button call stops a car travelling either way. */
+  stopsEitherWayAt(floor: FloorId): boolean {
+    return this.landingButtons === 'single-any-direction' && this.singleButtonAt(floor);
   }
 
   get idlePolicy(): IdlePolicy {

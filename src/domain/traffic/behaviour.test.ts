@@ -245,6 +245,45 @@ describe('a single button on the landing changes what squeezing even means', () 
   });
 });
 
+describe('the three landing arrangements behave differently', () => {
+  const stream = () =>
+    handMade([
+      person({ id: 1, origin: 0, destination: 5 }),
+      person({ id: 2, arrivalTime: 1, origin: 2, destination: 0 }),
+    ]);
+
+  const boardedUnder = (landingButtons: 'up-and-down' | 'down-only' | 'single-any-direction') => {
+    const result = runSimulation({
+      building: Building.of({ ...RESIDENTIAL_LOW, landingButtons }),
+      stream: stream(),
+      dispatcher: collective,
+      idlePolicy: 'stay-put',
+    });
+    return result.journeys.find((j) => j.passengerId === 2)?.boardedAt ?? Number.POSITIVE_INFINITY;
+  };
+
+  it('picks the down passenger up on the way up only when the button says nothing', () => {
+    // Non-directional stops a car going either way, so the wait is shortest. Full collective knows
+    // they want to go down and passes them; down collective takes the call to be a down call and
+    // passes them too, so both wait for the car to come back.
+    expect(boardedUnder('single-any-direction')).toBeLessThan(boardedUnder('up-and-down'));
+    expect(boardedUnder('single-any-direction')).toBeLessThan(boardedUnder('down-only'));
+  });
+
+  it('delivers everybody under all three', () => {
+    for (const arrangement of ['up-and-down', 'down-only', 'single-any-direction'] as const) {
+      const result = runSimulation({
+        building: Building.of({ ...RESIDENTIAL_LOW, landingButtons: arrangement }),
+        stream: stream(),
+        dispatcher: collective,
+        idlePolicy: 'stay-put',
+      });
+      expect(result.unfinished).toBe(0);
+      expect(checkInvariants(stream(), result)).toEqual([]);
+    }
+  });
+});
+
 describe('squeezing into a car going the wrong way', () => {
   // Needs two buttons on the landing, or there is no wrong direction to squeeze against.
   const fullCollective = Building.of({ ...RESIDENTIAL_LOW, landingButtons: 'up-and-down' });

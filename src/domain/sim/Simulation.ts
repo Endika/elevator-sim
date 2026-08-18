@@ -146,14 +146,14 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
       if (queued.length === 0) return [];
 
       if (building.singleButtonAt(floor)) {
-        return [
-          {
-            floor,
-            direction: 'down' as const,
-            since: Math.min(...queued.map((p) => p.arrivalTime)),
-            waiting: queued.length,
-          },
-        ];
+        const since = Math.min(...queued.map((p) => p.arrivalTime));
+        // Non-directional: the call carries no direction, so it stops a car going either way.
+        // Down collective: every call upstairs is understood to be a down call, and a car on its
+        // way up sails past.
+        const directions = building.stopsEitherWayAt(floor)
+          ? (['up', 'down'] as const)
+          : (['down'] as const);
+        return directions.map((direction) => ({ floor, direction, since, waiting: queued.length }));
       }
 
       return (['up', 'down'] as const).flatMap((direction) => {

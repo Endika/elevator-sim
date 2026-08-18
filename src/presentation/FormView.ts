@@ -26,8 +26,9 @@ const PRESET_LABELS: Record<PresetName, string> = {
 };
 
 const BUTTON_LABELS: Record<LandingButtons, string> = {
-  'up-and-down': 'Up and down — two buttons',
-  'down-only': 'Down only — one button (a block of flats)',
+  'up-and-down': 'Two buttons, up and down — full collective',
+  'down-only': 'One button, and a lift going up sails past — down collective',
+  'single-any-direction': 'One button, and it stops whichever way it is going — non-directional',
 };
 
 const PATTERN_LABELS: Record<TrafficPattern, string> = {
@@ -230,8 +231,9 @@ export class FormView {
           el('p', {
             class: 'mt-1 text-xs text-slate-500',
             text:
-              'Two buttons is full collective. One is down collective, what most blocks of flats ' +
-              'have — and then the lift has no idea which way you want to go.',
+              'The three arrangements Barney names. If there is one button, the way to tell them ' +
+              'apart is to watch a lift on its way up: down collective sails past you, ' +
+              'non-directional stops.',
           }),
         ]),
         this.number(
