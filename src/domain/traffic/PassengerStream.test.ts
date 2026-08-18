@@ -50,14 +50,15 @@ describe('common random numbers — the guarantee the whole method rests on', ()
     //
     // Updated 18 Aug 2026, from 1bdef9fe and then da8beed0: passengers gained the traits that
     // decide whether they squeeze into a car going the wrong way, whether they can manage the
-    // stairs, and how much room they take. The arrival times and journeys are unchanged.
+    // stairs, how much room they take and whether they hold the doors. Each new trait draws from
+    // the same generator, so the arrival times shift too — that is expected, not a regression.
     const json = JSON.stringify(generateStream(residential, UP_PEAK, 1));
     let hash = 0x811c9dc5;
     for (let i = 0; i < json.length; i += 1) {
       hash ^= json.charCodeAt(i);
       hash = Math.imul(hash, 0x01000193);
     }
-    expect((hash >>> 0).toString(16)).toBe('120464aa');
+    expect((hash >>> 0).toString(16)).toBe('75db29c');
   });
 });
 

@@ -173,6 +173,7 @@ describe('nearest-car starves the far floors, collective does not', () => {
     canUseStairs: false,
     patienceSeconds: null,
     spaceUnits: 1,
+    doorHoldSeconds: 0,
   }));
   const stream = {
     seed: 0,
@@ -190,6 +191,7 @@ describe('nearest-car starves the far floors, collective does not', () => {
         canUseStairs: false,
         patienceSeconds: null,
         spaceUnits: 1,
+        doorHoldSeconds: 0,
       },
     ],
   };

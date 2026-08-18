@@ -377,7 +377,13 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
     }
 
     record(car, 'transfers');
-    const cycle = moved * tp + car.spec.doorDwellTime + car.spec.doorCloseTime;
+    // Somebody loading the shopping or delivering a parcel holds the car where it stands, and
+    // everybody else in the building waits through it.
+    const held = [...alighting, ...boarding].reduce(
+      (longest, passenger) => Math.max(longest, passenger.doorHoldSeconds),
+      0,
+    );
+    const cycle = moved * tp + held + car.spec.doorDwellTime + car.spec.doorCloseTime;
     queue.push(now + cycle, PRIORITY.carMotion, { kind: 'doorsClosed', carIndex: car.index });
   };
 

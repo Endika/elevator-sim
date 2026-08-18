@@ -51,6 +51,14 @@ export interface TrafficConfig {
    */
   readonly encumberedSpace: number;
   /**
+   * Share of the people carrying something who hold the car at a floor while they load or unload:
+   * the courier propping the doors open to deliver, the neighbour running the shopping in, the one
+   * emptying the storeroom into the boot. Rare at the busiest hours, and ruinous when it happens.
+   */
+  readonly doorBlockShare: number;
+  /** How long they hold it for, in seconds. */
+  readonly doorBlockSeconds: number;
+  /**
    * Rounds started per hour by somebody who visits several floors before leaving: the concierge,
    * a courier with a bag of parcels. This is where a block of flats' between-floor traffic
    * actually comes from — neighbours almost never ride from the second to the fourth.
@@ -71,6 +79,8 @@ export const TEXTBOOK_BEHAVIOUR = {
   stairsMaxFloors: 0,
   stairsAbleShare: 0,
   encumberedSpace: 1,
+  doorBlockShare: 0,
+  doorBlockSeconds: 0,
   roundsPerHour: 0,
   roundStops: 0,
 } as const;
@@ -87,6 +97,8 @@ export const OBSERVED_BEHAVIOUR = {
   stairsMaxFloors: 3,
   stairsAbleShare: 0.7,
   encumberedSpace: 2.5,
+  doorBlockShare: 0.05,
+  doorBlockSeconds: 60,
   roundsPerHour: 2,
   roundStops: 3,
 } as const;
@@ -160,6 +172,18 @@ export function validateTraffic(traffic: TrafficConfig): string[] {
       `Somebody with a pram takes ${traffic.encumberedSpace} places; it cannot be less than the ` +
         'one place anybody takes.',
     );
+  }
+
+  if (
+    !Number.isFinite(traffic.doorBlockShare) ||
+    traffic.doorBlockShare < 0 ||
+    traffic.doorBlockShare > 1
+  ) {
+    problems.push('The share of people who hold the doors runs from 0 to 1.');
+  }
+
+  if (!Number.isFinite(traffic.doorBlockSeconds) || traffic.doorBlockSeconds < 0) {
+    problems.push('Holding the doors cannot take negative time.');
   }
 
   if (!Number.isFinite(traffic.roundsPerHour) || traffic.roundsPerHour < 0) {

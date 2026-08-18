@@ -49,6 +49,7 @@ function handMadeStream(
       canUseStairs: false,
       patienceSeconds: null,
       spaceUnits: 1,
+      doorHoldSeconds: 0,
     })),
   };
 }

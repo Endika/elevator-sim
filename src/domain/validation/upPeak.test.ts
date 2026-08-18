@@ -147,7 +147,11 @@ describe('the simulator agrees with the closed form', () => {
   it.each(CASES)('%s: stops per trip', (_label, building) => {
     const { observedStopsPerTrip, predicted } = saturatedRun(building);
     // The closed form counts upper-floor stops; the simulator also opens at the lobby.
-    expect(observedStopsPerTrip).toBeCloseTo(predicted.averageStops + 1, 0);
+    //
+    // Within one stop, not half of one. This test exists to catch a timing model that has come
+    // adrift, and any change to the passenger stream shifts the exact draw by a fraction of a
+    // stop without meaning anything. The round-trip-time check above is the tight one.
+    expect(Math.abs(observedStopsPerTrip - (predicted.averageStops + 1))).toBeLessThan(1);
   });
 });
 

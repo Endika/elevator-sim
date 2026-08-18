@@ -46,6 +46,7 @@ function person(overrides: Partial<Passenger> & Pick<Passenger, 'id'>): Passenge
     canUseStairs: false,
     patienceSeconds: null,
     spaceUnits: 1,
+    doorHoldSeconds: 0,
     ...overrides,
   };
 }
@@ -312,6 +313,36 @@ describe('a pram takes the room of several people', () => {
       ],
     };
     expect(collective.nextStop(nearlyFull, context)).toBeNull();
+  });
+});
+
+describe('holding the doors open', () => {
+  it('makes everybody else wait through it', () => {
+    const withHold = (doorHoldSeconds: number) => {
+      const stream = handMade([
+        person({ id: 1, arrivalTime: 0, origin: 3, destination: 0, doorHoldSeconds }),
+        person({ id: 2, arrivalTime: 200, origin: 4, destination: 0 }),
+      ]);
+      const result = runSimulation({
+        building: residential,
+        stream,
+        dispatcher: collective,
+        idlePolicy: 'stay-put',
+      });
+      return result.journeys.find((j) => j.passengerId === 1)?.arrivedAt ?? 0;
+    };
+
+    // A minute propping the doors open is a minute added to the journey and to everyone behind it.
+    expect(withHold(60) - withHold(0)).toBeCloseTo(60, 0);
+  });
+
+  it('is drawn per person in the stream, so every algorithm faces the same blockage', () => {
+    const traffic = { ...TRAFFIC, doorBlockShare: 1, doorBlockSeconds: 45, stairsAbleShare: 0 };
+    const stream = generateStream(residential, traffic, 3);
+    expect(stream.passengers.every((p) => p.doorHoldSeconds === 45)).toBe(true);
+
+    const none = generateStream(residential, { ...traffic, doorBlockShare: 0 }, 3);
+    expect(none.passengers.every((p) => p.doorHoldSeconds === 0)).toBe(true);
   });
 });
 

@@ -40,6 +40,8 @@ export interface Scenario {
   readonly stairsMaxFloors: number;
   readonly stairsAbleShare: number;
   readonly encumberedSpace: number;
+  readonly doorBlockShare: number;
+  readonly doorBlockSeconds: number;
   readonly roundsPerHour: number;
   readonly roundStops: number;
 }
@@ -122,6 +124,8 @@ export function trafficConfigOf(scenario: Scenario): TrafficConfig {
     stairsMaxFloors: scenario.stairsMaxFloors,
     stairsAbleShare: scenario.stairsAbleShare,
     encumberedSpace: scenario.encumberedSpace,
+    doorBlockShare: scenario.doorBlockShare,
+    doorBlockSeconds: scenario.doorBlockSeconds,
     roundsPerHour: scenario.roundsPerHour,
     roundStops: scenario.roundStops,
   };

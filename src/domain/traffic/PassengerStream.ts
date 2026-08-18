@@ -31,6 +31,11 @@ export interface Passenger {
    * three people at the school run.
    */
   readonly spaceUnits: number;
+  /**
+   * Seconds they hold the car at a floor while loading or unloading, on top of the ordinary
+   * transfer. Zero for almost everybody; a minute for the courier propping the doors open.
+   */
+  readonly doorHoldSeconds: number;
 }
 
 export interface PassengerStream {
@@ -134,8 +139,10 @@ function roundLegs(
         boardsAnyDirection: prng.nextFloat() < traffic.opportunistShare,
         canUseStairs: false,
         patienceSeconds: null,
-        // A courier is pushing a trolley or carrying a stack of parcels.
+        // A courier is pushing a trolley or carrying a stack of parcels — and is the likeliest
+        // person in the building to prop the doors open while they hand it over.
         spaceUnits: traffic.encumberedSpace,
+        doorHoldSeconds: prng.nextFloat() < traffic.doorBlockShare ? traffic.doorBlockSeconds : 0,
       }),
     );
   }
@@ -182,6 +189,7 @@ export function generateStream(
             destination,
             traffic,
           ),
+          doorHoldSeconds: prng.nextFloat() < traffic.doorBlockShare ? traffic.doorBlockSeconds : 0,
         }),
       );
       nextId += 1;

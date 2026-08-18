@@ -47,6 +47,8 @@ const KEYS = {
   roundStops: 'rs',
   landingButtons: 'lb',
   encumberedSpace: 'es',
+  doorBlockShare: 'bs',
+  doorBlockSeconds: 'bt',
 } as const;
 
 export function encodeScenario(scenario: Scenario): string {
@@ -73,6 +75,8 @@ export function encodeScenario(scenario: Scenario): string {
   params.set(KEYS.roundStops, String(scenario.roundStops));
   params.set(KEYS.landingButtons, scenario.landingButtons);
   params.set(KEYS.encumberedSpace, String(scenario.encumberedSpace));
+  params.set(KEYS.doorBlockShare, String(scenario.doorBlockShare));
+  params.set(KEYS.doorBlockSeconds, String(scenario.doorBlockSeconds));
   params.set(KEYS.capacity, String(scenario.car.capacity));
   params.set(KEYS.ratedSpeed, String(scenario.car.ratedSpeed));
   params.set(KEYS.acceleration, String(scenario.car.acceleration));
@@ -148,6 +152,8 @@ export function decodeScenario(query: string): Scenario {
     ),
     stairsAbleShare: share(KEYS.stairsAbleShare, DEFAULT_SCENARIO.stairsAbleShare),
     encumberedSpace: number(KEYS.encumberedSpace, DEFAULT_SCENARIO.encumberedSpace),
+    doorBlockShare: share(KEYS.doorBlockShare, DEFAULT_SCENARIO.doorBlockShare),
+    doorBlockSeconds: nonNegative(KEYS.doorBlockSeconds, DEFAULT_SCENARIO.doorBlockSeconds),
     roundsPerHour: nonNegative(KEYS.roundsPerHour, DEFAULT_SCENARIO.roundsPerHour),
     roundStops: Math.round(nonNegative(KEYS.roundStops, DEFAULT_SCENARIO.roundStops)),
     landingButtons: oneOf<LandingButtons>(
