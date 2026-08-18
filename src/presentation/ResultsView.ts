@@ -47,6 +47,7 @@ export class ResultsView {
           verdict.points.map((point) => el('li', { text: `— ${point}` })),
         ),
       ]),
+      blockedDoorsNotice(result),
       el('div', { class: CARD }, [
         heading('Every algorithm, side by side'),
         this.table(result),
@@ -150,6 +151,44 @@ const VERDICT_TONE: Record<string, string> = {
 function verdict(verdicts: ReadonlyMap<string, string>, dispatcher: string): HTMLElement {
   const value = verdicts.get(dispatcher) ?? 'indistinguishable';
   return el('span', { class: VERDICT_TONE[value] ?? 'text-slate-500', text: value });
+}
+
+/**
+ * The one thing on this page that costs nothing to fix, so it gets its own notice — and a measured
+ * figure for this building rather than a piece of general advice.
+ */
+function blockedDoorsNotice(result: ExperimentResult): HTMLElement | null {
+  const cost = result.blockedDoorsCost;
+  if (!cost || cost.difference < 1) return null;
+
+  const share = ((cost.difference / cost.without) * 100).toFixed(0);
+
+  return el('div', { class: `${CARD} border-sky-800/60 bg-sky-950/20` }, [
+    el('h3', {
+      class: 'font-semibold text-sky-300',
+      text: 'Somebody is holding the doors, and it costs more than the algorithm does',
+    }),
+    el('p', { class: 'mt-2 text-sm text-slate-300' }, [
+      'Delivering a parcel with the doors propped open, running the shopping in, emptying the ' +
+        'storeroom into the boot. In this building it adds ',
+      el('strong', { class: 'text-sky-200', text: `${cost.difference.toFixed(1)} s` }),
+      ` to everybody's wait — ${share}% more than the same morning without it ` +
+        `(${cost.without.toFixed(1)} s versus ${cost.withBlocking.toFixed(1)} s).`,
+    ]),
+    el('p', {
+      class: 'mt-2 text-sm text-slate-400',
+      text:
+        'That is a controlled comparison, not an estimate: the same people arrive at the same ' +
+        'moments going to the same floors, and the only thing changed is whether anybody holds ' +
+        'the doors.',
+    }),
+    el('p', {
+      class: 'mt-2 text-sm text-slate-400',
+      text:
+        'It is also the only thing on this page that costs nothing. You cannot add a lift by ' +
+        'asking politely; you can ask people not to block the doors.',
+    }),
+  ]);
 }
 
 function heading(title: string): HTMLElement {

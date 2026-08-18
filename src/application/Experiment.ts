@@ -26,6 +26,19 @@ export interface Aggregate {
   readonly sds: Readonly<Record<string, number>>;
 }
 
+/**
+ * What the door-holders cost, as a controlled experiment rather than an estimate.
+ *
+ * Setting the share to zero changes which people hold the doors and nothing else: the draw is
+ * still made, so the arrival times, destinations, prams and patience are identical passenger for
+ * passenger. The difference is attributable to the blocking and to nothing else.
+ */
+export interface BlockedDoorsCost {
+  readonly withBlocking: number;
+  readonly without: number;
+  readonly difference: number;
+}
+
 export interface ExperimentResult {
   readonly building: string;
   readonly pattern: string;
@@ -34,6 +47,8 @@ export interface ExperimentResult {
   readonly baseline: DispatcherName;
   readonly aggregates: readonly Aggregate[];
   readonly comparisons: readonly PairedResult[];
+  /** Null when nobody was holding the doors in the first place. */
+  readonly blockedDoorsCost: BlockedDoorsCost | null;
 }
 
 export type Progress = (done: number, total: number) => void;
@@ -123,6 +138,7 @@ export function runExperiment(spec: ExperimentSpec, onProgress?: Progress): Expe
     });
 
   return {
+    blockedDoorsCost: costOfBlockedDoors(spec),
     building: spec.building.name,
     pattern: spec.traffic.pattern,
     idlePolicy: spec.idlePolicy ?? spec.building.idlePolicy,
@@ -131,6 +147,36 @@ export function runExperiment(spec: ExperimentSpec, onProgress?: Progress): Expe
     aggregates,
     comparisons,
   };
+}
+
+function costOfBlockedDoors(spec: ExperimentSpec): BlockedDoorsCost | null {
+  if (spec.traffic.doorBlockShare <= 0 || spec.traffic.doorBlockSeconds <= 0) return null;
+
+  const firstSeed = spec.firstSeed ?? 1;
+  const meanWaitWith = (traffic: typeof spec.traffic): number => {
+    const waits: number[] = [];
+    for (let offset = 0; offset < spec.seeds; offset += 1) {
+      const stream = generateStream(spec.building, traffic, firstSeed + offset);
+      const result = runSimulation({
+        building: spec.building,
+        stream,
+        dispatcher: DISPATCHERS[spec.baseline],
+        ...(spec.idlePolicy ? { idlePolicy: spec.idlePolicy } : {}),
+      });
+      waits.push(
+        mean(
+          result.journeys
+            .filter((journey) => journey.boardedAt !== null)
+            .map((journey) => (journey.boardedAt ?? 0) - journey.calledAt),
+        ),
+      );
+    }
+    return mean(waits);
+  };
+
+  const withBlocking = meanWaitWith(spec.traffic);
+  const without = meanWaitWith({ ...spec.traffic, doorBlockShare: 0 });
+  return { withBlocking, without, difference: withBlocking - without };
 }
 
 function seriesOf(perSeed: readonly Metrics[]): Record<string, number[]> {
