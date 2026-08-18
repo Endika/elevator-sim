@@ -22,6 +22,7 @@ function carAt(floor: number, overrides: Partial<CarView> = {}): CarView {
     activity: 'idle',
     direction: null,
     onboard: 0,
+    spaceUsed: 0,
     capacity: 6,
     carCalls: [],
     idleSince: 0,
@@ -30,7 +31,7 @@ function carAt(floor: number, overrides: Partial<CarView> = {}): CarView {
 }
 
 function call(floor: number, direction: 'up' | 'down', since = 0): HallCall {
-  return { floor, direction, since, waiting: 1 };
+  return { floor, direction, since, waiting: 1, smallestSpace: 1 };
 }
 
 function contextWith(cars: readonly CarView[], hallCalls: readonly HallCall[]): DispatchContext {
@@ -54,7 +55,13 @@ describe('collective sweeps and then reverses', () => {
   });
 
   it('will not answer a landing call at all once it is full', () => {
-    const full = carAt(0, { direction: 'down', onboard: 6, capacity: 6, carCalls: [4] });
+    const full = carAt(0, {
+      direction: 'down',
+      onboard: 6,
+      spaceUsed: 6,
+      capacity: 6,
+      carCalls: [4],
+    });
     const context = contextWith([full], [call(0, 'up')]);
     expect(collective.nextStop(full, context)).toBe(4);
   });
@@ -72,7 +79,7 @@ describe('collective sweeps and then reverses', () => {
   });
 
   it('delivers passengers aboard before turning round', () => {
-    const car = carAt(1, { direction: 'up', onboard: 1, carCalls: [7] });
+    const car = carAt(1, { direction: 'up', onboard: 1, spaceUsed: 1, carCalls: [7] });
     const context = contextWith([car], [call(0, 'up')]);
     expect(collective.nextStop(car, context)).toBe(7);
   });
@@ -105,7 +112,7 @@ describe('fcfs answers in the order buttons were pressed', () => {
   });
 
   it('finishes with the passenger aboard first', () => {
-    const car = carAt(1, { onboard: 1, carCalls: [6] });
+    const car = carAt(1, { onboard: 1, spaceUsed: 1, carCalls: [6] });
     const context = contextWith([car], [call(0, 'up', 0)]);
     expect(fcfs.nextStop(car, context)).toBe(6);
   });
@@ -165,6 +172,7 @@ describe('nearest-car starves the far floors, collective does not', () => {
     boardsAnyDirection: false,
     canUseStairs: false,
     patienceSeconds: null,
+    spaceUnits: 1,
   }));
   const stream = {
     seed: 0,
@@ -181,6 +189,7 @@ describe('nearest-car starves the far floors, collective does not', () => {
         boardsAnyDirection: false,
         canUseStairs: false,
         patienceSeconds: null,
+        spaceUnits: 1,
       },
     ],
   };

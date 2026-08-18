@@ -32,8 +32,8 @@ export function clairvoyantOf(stream: PassengerStream, horizonSeconds = 120): Di
     name: 'clairvoyant',
 
     nextStop(car, context) {
-      const calls = car.onboard >= car.capacity ? [] : callsFor(car, context);
-      const future = car.onboard >= car.capacity ? [] : upcoming(context.now);
+      const calls = car.spaceUsed >= car.capacity ? [] : callsFor(car, context);
+      const future = car.spaceUsed >= car.capacity ? [] : upcoming(context.now);
 
       // Pre-position only where the passenger will certainly be standing when the car arrives,
       // and only to a floor no other car has taken. Without both, foresight turns into a door

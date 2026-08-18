@@ -45,6 +45,7 @@ function person(overrides: Partial<Passenger> & Pick<Passenger, 'id'>): Passenge
     boardsAnyDirection: false,
     canUseStairs: false,
     patienceSeconds: null,
+    spaceUnits: 1,
     ...overrides,
   };
 }
@@ -242,6 +243,75 @@ describe('a single button on the landing changes what squeezing even means', () 
     const boarded = (opportunist: boolean) =>
       run(opportunist).journeys.find((j) => j.passengerId === 3)?.boardedAt;
     expect(boarded(true)).toBe(boarded(false));
+  });
+});
+
+describe('a pram takes the room of several people', () => {
+  const pram = (id: number, arrivalTime: number) =>
+    person({ id, arrivalTime, origin: 3, destination: 0, spaceUnits: 2.5 });
+
+  it('fills a six-person car with three people at the school run', () => {
+    // Two prams and one adult is six places. The fourth person is left on the landing, which is
+    // the whole complaint: the car is full and only three people got in.
+    const stream = handMade([
+      pram(1, 0),
+      pram(2, 0),
+      person({ id: 3, arrivalTime: 0, origin: 3, destination: 0 }),
+      person({ id: 4, arrivalTime: 0, origin: 3, destination: 0 }),
+    ]);
+    const result = runSimulation({
+      building: Building.of({ ...RESIDENTIAL_LOW, cars: [{ ...RESIDENTIAL_CAR, capacity: 6 }] }),
+      stream,
+      dispatcher: collective,
+      idlePolicy: 'stay-put',
+      trace: true,
+    });
+
+    const first = result.trace?.find((entry) => entry.kind === 'transfers' && entry.onboard > 0);
+    expect(first?.onboard).toBe(3);
+    expect(result.journeys.some((journey) => journey.leftBehind > 0)).toBe(true);
+    expect(result.unfinished).toBe(0);
+    expect(checkInvariants(stream, result)).toEqual([]);
+  });
+
+  it('takes four ordinary people in the same car', () => {
+    const stream = handMade(
+      [1, 2, 3, 4].map((id) => person({ id, arrivalTime: 0, origin: 3, destination: 0 })),
+    );
+    const result = runSimulation({
+      building: Building.of({ ...RESIDENTIAL_LOW, cars: [{ ...RESIDENTIAL_CAR, capacity: 6 }] }),
+      stream,
+      dispatcher: collective,
+      idlePolicy: 'stay-put',
+      trace: true,
+    });
+    const first = result.trace?.find((entry) => entry.kind === 'transfers' && entry.onboard > 0);
+    expect(first?.onboard).toBe(4);
+  });
+
+  it('does not send a car with one place free to fetch somebody who needs three', () => {
+    // Otherwise the doors open for nobody, over and over.
+    const nearlyFull = {
+      index: 0,
+      floor: 0,
+      target: null,
+      activity: 'idle' as const,
+      direction: null,
+      onboard: 5,
+      spaceUsed: 5,
+      capacity: 6,
+      carCalls: [],
+      idleSince: 0,
+    };
+    const context = {
+      building: residential,
+      now: 100,
+      cars: [nearlyFull],
+      hallCalls: [
+        { floor: 3, direction: 'down' as const, since: 0, waiting: 1, smallestSpace: 2.5 },
+      ],
+    };
+    expect(collective.nextStop(nearlyFull, context)).toBeNull();
   });
 });
 

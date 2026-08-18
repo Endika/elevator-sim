@@ -64,6 +64,11 @@ interface SimEvent {
 const DEFAULT_DRAIN_SECONDS = 3600;
 const FRUITLESS_STOP_LIMIT = 3;
 
+/** Places taken, not heads: a pram counts for several. */
+function spaceIn(car: CarState): number {
+  return car.onboard.reduce((total, passenger) => total + passenger.spaceUnits, 0);
+}
+
 export function directionOf(passenger: Passenger): Direction {
   return passenger.destination > passenger.origin ? 'up' : 'down';
 }
@@ -128,6 +133,7 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
     activity: car.activity,
     direction: car.direction,
     onboard: car.onboard.length,
+    spaceUsed: spaceIn(car),
     capacity: car.spec.capacity,
     carCalls: [...new Set(car.onboard.map((p) => p.destination))],
     idleSince: car.idleSince,
@@ -153,7 +159,14 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
         const directions = building.stopsEitherWayAt(floor)
           ? (['up', 'down'] as const)
           : (['down'] as const);
-        return directions.map((direction) => ({ floor, direction, since, waiting: queued.length }));
+        const smallestSpace = Math.min(...queued.map((p) => p.spaceUnits));
+        return directions.map((direction) => ({
+          floor,
+          direction,
+          since,
+          waiting: queued.length,
+          smallestSpace,
+        }));
       }
 
       return (['up', 'down'] as const).flatMap((direction) => {
@@ -165,6 +178,7 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
             direction,
             since: Math.min(...behind.map((p) => p.arrivalTime)),
             waiting: behind.length,
+            smallestSpace: Math.min(...behind.map((p) => p.spaceUnits)),
           },
         ];
       });
@@ -312,8 +326,16 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
     // the lift is going the wrong way, but by the time it comes back there may be no space.
     const squeezing = queued.filter((p) => !wanted.includes(p) && p.boardsAnyDirection);
     const eligible = [...wanted, ...squeezing];
-    const space = Math.max(0, car.spec.capacity - car.onboard.length);
-    const boarding = eligible.slice(0, space);
+    // Board place by place, in queue order, skipping whoever will not fit. Somebody with a pram
+    // is passed over rather than blocking the doorway — which is why their wait is worth counting
+    // separately, since they are the ones who cannot walk away from it either.
+    let free = Math.max(0, car.spec.capacity - spaceIn(car));
+    const boarding: Passenger[] = [];
+    for (const passenger of eligible) {
+      if (passenger.spaceUnits > free) continue;
+      boarding.push(passenger);
+      free -= passenger.spaceUnits;
+    }
 
     const boardingBase = now + alighting.length * tp;
     boarding.forEach((passenger, position) => {
@@ -323,24 +345,27 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
     });
     // Only people the car was actually serving count as left behind; somebody who tried to
     // squeeze into a car going the other way was never owed a place on it.
-    for (const passenger of wanted.slice(space)) {
+    const boarded = new Set(boarding.map((p) => p.id));
+    for (const passenger of wanted) {
+      if (boarded.has(passenger.id)) continue;
       const journey = journeys.get(passenger.id);
       if (journey) journey.leftBehind += 1;
     }
 
-    const boarded = new Set(boarding.map((p) => p.id));
     waiting.set(
       car.floor,
       queued.filter((p) => !boarded.has(p.id)),
     );
 
-    if (car.onboard.length > car.spec.capacity) {
+    if (spaceIn(car) > car.spec.capacity + 1e-9) {
       throw new Error(
-        `Car ${car.index + 1} holds ${car.onboard.length} people, over its capacity of ` +
-          `${car.spec.capacity}.`,
+        `Car ${car.index + 1} is carrying ${spaceIn(car)} places' worth of people, over its ` +
+          `capacity of ${car.spec.capacity}.`,
       );
     }
 
+    // A stop where nobody could fit is not a pointless stop, it is a full car. Only count the
+    // stops where there was nothing to do at all, which is the dispatcher's fault.
     const moved = alighting.length + boarding.length;
     car.fruitlessStops = moved === 0 ? car.fruitlessStops + 1 : 0;
     if (car.fruitlessStops > FRUITLESS_STOP_LIMIT) {

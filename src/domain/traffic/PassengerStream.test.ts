@@ -48,16 +48,16 @@ describe('common random numbers — the guarantee the whole method rests on', ()
     // generator changes by accident; a deliberate change means updating this number on purpose
     // and saying so, which is the point.
     //
-    // Updated 18 Aug 2026, from 1bdef9fe: passengers gained the traits that decide whether they
-    // squeeze into a car going the wrong way and whether they can manage the stairs, so the
-    // serialised stream is a different shape. The arrival times and journeys are unchanged.
+    // Updated 18 Aug 2026, from 1bdef9fe and then da8beed0: passengers gained the traits that
+    // decide whether they squeeze into a car going the wrong way, whether they can manage the
+    // stairs, and how much room they take. The arrival times and journeys are unchanged.
     const json = JSON.stringify(generateStream(residential, UP_PEAK, 1));
     let hash = 0x811c9dc5;
     for (let i = 0; i < json.length; i += 1) {
       hash ^= json.charCodeAt(i);
       hash = Math.imul(hash, 0x01000193);
     }
-    expect((hash >>> 0).toString(16)).toBe('da8beed0');
+    expect((hash >>> 0).toString(16)).toBe('120464aa');
   });
 });
 

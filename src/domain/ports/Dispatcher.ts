@@ -8,6 +8,11 @@ export interface HallCall {
   readonly direction: Direction;
   readonly since: number;
   readonly waiting: number;
+  /**
+   * Places the least bulky person waiting here needs. A car with one place free cannot answer a
+   * call from somebody pushing a pram, and pretending otherwise makes it stop for nobody.
+   */
+  readonly smallestSpace: number;
 }
 
 export type CarActivity = 'idle' | 'doors' | 'moving' | 'parking';
@@ -18,7 +23,13 @@ export interface CarView {
   readonly target: FloorId | null;
   readonly activity: CarActivity;
   readonly direction: Direction | null;
+  /** Heads inside. */
   readonly onboard: number;
+  /**
+   * Places taken inside, which is not the same thing: a pram takes several. Compare this against
+   * the capacity to decide whether a car is full, never the headcount.
+   */
+  readonly spaceUsed: number;
   readonly capacity: number;
   /** Destinations of the passengers aboard, in the order they boarded. */
   readonly carCalls: readonly FloorId[];

@@ -69,7 +69,7 @@ interface Survey {
 }
 
 function survey(car: CarView, context: DispatchContext): Survey {
-  const calls = car.onboard >= car.capacity ? [] : callsFor(car, context);
+  const calls = car.spaceUsed >= car.capacity ? [] : callsFor(car, context);
   const stops = [...car.carCalls, ...calls.map((call) => call.floor)];
   return { heading: headingOf(car, stops), calls, carCalls: car.carCalls };
 }

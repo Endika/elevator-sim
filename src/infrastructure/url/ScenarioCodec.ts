@@ -46,6 +46,7 @@ const KEYS = {
   roundsPerHour: 'rh',
   roundStops: 'rs',
   landingButtons: 'lb',
+  encumberedSpace: 'es',
 } as const;
 
 export function encodeScenario(scenario: Scenario): string {
@@ -71,6 +72,7 @@ export function encodeScenario(scenario: Scenario): string {
   params.set(KEYS.roundsPerHour, String(scenario.roundsPerHour));
   params.set(KEYS.roundStops, String(scenario.roundStops));
   params.set(KEYS.landingButtons, scenario.landingButtons);
+  params.set(KEYS.encumberedSpace, String(scenario.encumberedSpace));
   params.set(KEYS.capacity, String(scenario.car.capacity));
   params.set(KEYS.ratedSpeed, String(scenario.car.ratedSpeed));
   params.set(KEYS.acceleration, String(scenario.car.acceleration));
@@ -145,6 +147,7 @@ export function decodeScenario(query: string): Scenario {
       nonNegative(KEYS.stairsMaxFloors, DEFAULT_SCENARIO.stairsMaxFloors),
     ),
     stairsAbleShare: share(KEYS.stairsAbleShare, DEFAULT_SCENARIO.stairsAbleShare),
+    encumberedSpace: number(KEYS.encumberedSpace, DEFAULT_SCENARIO.encumberedSpace),
     roundsPerHour: nonNegative(KEYS.roundsPerHour, DEFAULT_SCENARIO.roundsPerHour),
     roundStops: Math.round(nonNegative(KEYS.roundStops, DEFAULT_SCENARIO.roundStops)),
     landingButtons: oneOf<LandingButtons>(

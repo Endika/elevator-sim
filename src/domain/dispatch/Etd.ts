@@ -16,7 +16,7 @@ export const etd: Dispatcher = {
   name: 'etd',
 
   nextStop(car, context) {
-    const calls = car.onboard >= car.capacity ? [] : callsFor(car, context);
+    const calls = car.spaceUsed >= car.capacity ? [] : callsFor(car, context);
     const candidates = [...new Set([...car.carCalls, ...calls.map((call) => call.floor)])];
     if (candidates.length === 0) return null;
 

@@ -20,11 +20,18 @@ export function callsFor(car: CarView, context: DispatchContext): readonly HallC
   // own floor opens for nobody.
   const candidates = context.cars.filter(
     (other) =>
-      other.onboard < other.capacity && (other.index === car.index || other.activity === 'idle'),
+      other.spaceUsed < other.capacity && (other.index === car.index || other.activity === 'idle'),
   );
 
+  // A car with a place and a half free is no use to somebody with a pram: answering that call
+  // would mean opening the doors for nobody.
+  const room = car.capacity - car.spaceUsed;
+
   return context.hallCalls.filter(
-    (call) => !claimed.has(call.floor) && nearestCarTo(call.floor, candidates) === car.index,
+    (call) =>
+      call.smallestSpace <= room &&
+      !claimed.has(call.floor) &&
+      nearestCarTo(call.floor, candidates) === car.index,
   );
 }
 

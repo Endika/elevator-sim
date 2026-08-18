@@ -26,6 +26,11 @@ export interface Passenger {
    * algorithm being compared.
    */
   readonly patienceSeconds: number | null;
+  /**
+   * Room they take in the car, in whole-person units. The pram is why a six-person car fills with
+   * three people at the school run.
+   */
+  readonly spaceUnits: number;
 }
 
 export interface PassengerStream {
@@ -62,7 +67,7 @@ export function stairsDecisionFor(
   origin: FloorId,
   destination: FloorId,
   traffic: TrafficConfig,
-): { canUseStairs: boolean; patienceSeconds: number | null } {
+): { canUseStairs: boolean; patienceSeconds: number | null; spaceUnits: number } {
   const floors = Math.abs(destination - origin);
   const effort = floors * (destination < origin ? DOWNWARD_EFFORT : 1);
   const willWalk =
@@ -70,6 +75,9 @@ export function stairsDecisionFor(
   return {
     canUseStairs: able,
     patienceSeconds: willWalk ? traffic.stairsPatiencePerFloor * effort : null,
+    // The reason somebody cannot take the stairs is usually the thing they are pushing or
+    // carrying, and that thing takes up room. The two go together.
+    spaceUnits: able ? 1 : traffic.encumberedSpace,
   };
 }
 
@@ -126,6 +134,8 @@ function roundLegs(
         boardsAnyDirection: prng.nextFloat() < traffic.opportunistShare,
         canUseStairs: false,
         patienceSeconds: null,
+        // A courier is pushing a trolley or carrying a stack of parcels.
+        spaceUnits: traffic.encumberedSpace,
       }),
     );
   }
