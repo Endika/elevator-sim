@@ -22,7 +22,9 @@ export interface Trip {
  */
 const MIXES: Record<'lunch' | 'residential-sparse', Record<TripKind, number>> = {
   lunch: { up: 0.4, down: 0.4, interfloor: 0.2 },
-  'residential-sparse': { up: 0.49, down: 0.49, interfloor: 0.02 },
+  // No random interfloor at all: in a block of flats that traffic is not neighbours visiting each
+  // other, it is the concierge and the courier doing rounds, and rounds are generated separately.
+  'residential-sparse': { up: 0.5, down: 0.5, interfloor: 0 },
 };
 
 function pickUniform(options: readonly Floor[], prng: Prng, what: string): FloorId {

@@ -2,7 +2,7 @@ import type { Building } from '../building/Building';
 import type { FloorId } from '../config/BuildingConfig';
 import type { TrafficConfig } from '../config/TrafficConfig';
 import { validateTraffic } from '../config/TrafficConfig';
-import { createPrng, deriveSeed } from '../random/Prng';
+import { createPrng, deriveSeed, type Prng } from '../random/Prng';
 import { drawDestination, drawOrigin, drawTripKind, patternIsPossible } from './patterns';
 
 export interface Passenger {
@@ -43,6 +43,14 @@ export interface PassengerStream {
 const DOWNWARD_EFFORT = 0.5;
 
 /**
+ * Seconds between one leg of a round and the next: riding up, handing over the parcel or checking
+ * the landing, then calling the lift again. A fixed estimate rather than the real elapsed time,
+ * because the stream is generated before anything is simulated — which is also what keeps every
+ * algorithm facing the identical round.
+ */
+const ROUND_LEG_SECONDS = 90;
+
+/**
  * How long somebody waits before walking, and whether they can at all.
  *
  * Patience grows with the climb — you hang on longer for five floors than for one — and beyond the
@@ -77,6 +85,53 @@ function drawGroupSize(burstiness: number, uniform: number): number {
  * them face an identical morning. Takes no dispatcher, by design: nothing being measured can
  * influence its own demand.
  */
+/**
+ * One round: in at an entrance, up to a few floors in turn, then back out. Modelled as ordinary
+ * passengers spaced a fixed gap apart, so nothing about the engine has to change and the 1:1
+ * relationship between a person in the stream and a journey in the result survives.
+ *
+ * They never take the stairs. Somebody carrying a bag of parcels is not walking up, which is the
+ * whole reason they are in the lift.
+ */
+function roundLegs(
+  building: Building,
+  traffic: TrafficConfig,
+  prng: Prng,
+  start: number,
+  firstId: number,
+): Passenger[] {
+  const entrance = building.entrances[prng.nextInt(0, building.entrances.length)];
+  const upstairs = building.occupied.filter((floor) => !floor.isEntrance);
+  if (!entrance || upstairs.length === 0) return [];
+
+  const stops: FloorId[] = [];
+  for (let i = 0; i < traffic.roundStops; i += 1) {
+    const floor = upstairs[prng.nextWeightedIndex(upstairs.map((f) => f.population))];
+    if (floor && floor.id !== stops.at(-1)) stops.push(floor.id);
+  }
+  if (stops.length === 0) return [];
+
+  const path = [entrance.id, ...stops, entrance.id];
+  const legs: Passenger[] = [];
+  for (let i = 0; i < path.length - 1; i += 1) {
+    const origin = path[i];
+    const destination = path[i + 1];
+    if (origin === undefined || destination === undefined || origin === destination) continue;
+    legs.push(
+      Object.freeze({
+        id: firstId + legs.length,
+        arrivalTime: start + legs.length * ROUND_LEG_SECONDS,
+        origin,
+        destination,
+        boardsAnyDirection: prng.nextFloat() < traffic.opportunistShare,
+        canUseStairs: false,
+        patienceSeconds: null,
+      }),
+    );
+  }
+  return legs;
+}
+
 export function generateStream(
   building: Building,
   traffic: TrafficConfig,
@@ -123,6 +178,19 @@ export function generateStream(
     }
 
     time += prng.nextExponentialGap(groupsPerSecond);
+  }
+
+  if (traffic.roundsPerHour > 0 && traffic.roundStops > 0) {
+    const roundPrng = createPrng(deriveSeed(seed, 'rounds'));
+    let roundStart = roundPrng.nextExponentialGap(traffic.roundsPerHour / 3600);
+    while (roundStart < traffic.durationSeconds) {
+      for (const leg of roundLegs(building, traffic, roundPrng, roundStart, nextId)) {
+        passengers.push(leg);
+        nextId += 1;
+      }
+      roundStart += roundPrng.nextExponentialGap(traffic.roundsPerHour / 3600);
+    }
+    passengers.sort((a, b) => a.arrivalTime - b.arrivalTime || a.id - b.id);
   }
 
   return Object.freeze({

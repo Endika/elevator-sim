@@ -44,6 +44,14 @@ export interface TrafficConfig {
    * takes. They are also the people the worst waits land on, which is why they are counted apart.
    */
   readonly stairsAbleShare: number;
+  /**
+   * Rounds started per hour by somebody who visits several floors before leaving: the concierge,
+   * a courier with a bag of parcels. This is where a block of flats' between-floor traffic
+   * actually comes from — neighbours almost never ride from the second to the fourth.
+   */
+  readonly roundsPerHour: number;
+  /** Floors visited in one round before they head back out. */
+  readonly roundStops: number;
 }
 
 /**
@@ -56,6 +64,8 @@ export const TEXTBOOK_BEHAVIOUR = {
   stairsPatiencePerFloor: 0,
   stairsMaxFloors: 0,
   stairsAbleShare: 0,
+  roundsPerHour: 0,
+  roundStops: 0,
 } as const;
 
 /**
@@ -69,6 +79,8 @@ export const OBSERVED_BEHAVIOUR = {
   stairsPatiencePerFloor: 20,
   stairsMaxFloors: 3,
   stairsAbleShare: 0.7,
+  roundsPerHour: 2,
+  roundStops: 3,
 } as const;
 
 export function validateTraffic(traffic: TrafficConfig): string[] {
@@ -133,6 +145,14 @@ export function validateTraffic(traffic: TrafficConfig): string[] {
       `${traffic.stairsAbleShare} is not a share of people; it runs from 0 (nobody can manage the ` +
         'stairs) to 1 (everybody can).',
     );
+  }
+
+  if (!Number.isFinite(traffic.roundsPerHour) || traffic.roundsPerHour < 0) {
+    problems.push('Rounds per hour cannot be negative.');
+  }
+
+  if (!Number.isInteger(traffic.roundStops) || traffic.roundStops < 0) {
+    problems.push('A round visits a whole number of floors, zero or more.');
   }
 
   return problems;

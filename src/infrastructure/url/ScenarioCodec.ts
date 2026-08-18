@@ -38,6 +38,8 @@ const KEYS = {
   stairsPatiencePerFloor: 'sp',
   stairsMaxFloors: 'sm',
   stairsAbleShare: 'sa',
+  roundsPerHour: 'rh',
+  roundStops: 'rs',
 } as const;
 
 export function encodeScenario(scenario: Scenario): string {
@@ -60,6 +62,8 @@ export function encodeScenario(scenario: Scenario): string {
   params.set(KEYS.stairsPatiencePerFloor, String(scenario.stairsPatiencePerFloor));
   params.set(KEYS.stairsMaxFloors, String(scenario.stairsMaxFloors));
   params.set(KEYS.stairsAbleShare, String(scenario.stairsAbleShare));
+  params.set(KEYS.roundsPerHour, String(scenario.roundsPerHour));
+  params.set(KEYS.roundStops, String(scenario.roundStops));
   params.set(KEYS.capacity, String(scenario.car.capacity));
   params.set(KEYS.ratedSpeed, String(scenario.car.ratedSpeed));
   params.set(KEYS.acceleration, String(scenario.car.acceleration));
@@ -134,6 +138,8 @@ export function decodeScenario(query: string): Scenario {
       nonNegative(KEYS.stairsMaxFloors, DEFAULT_SCENARIO.stairsMaxFloors),
     ),
     stairsAbleShare: share(KEYS.stairsAbleShare, DEFAULT_SCENARIO.stairsAbleShare),
+    roundsPerHour: nonNegative(KEYS.roundsPerHour, DEFAULT_SCENARIO.roundsPerHour),
+    roundStops: Math.round(nonNegative(KEYS.roundStops, DEFAULT_SCENARIO.roundStops)),
     car: {
       capacity: number(KEYS.capacity, DEFAULT_SCENARIO.car.capacity, { integer: true }),
       ratedSpeed: number(KEYS.ratedSpeed, DEFAULT_SCENARIO.car.ratedSpeed),

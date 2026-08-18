@@ -144,6 +144,84 @@ describe('giving up, in a run', () => {
   });
 });
 
+describe('the concierge and the courier', () => {
+  const withRounds = { ...TRAFFIC, roundsPerHour: 6, roundStops: 3 };
+
+  it('is the only source of between-floor traffic in a block of flats', () => {
+    const withoutRounds = generateStream(residential, { ...withRounds, roundsPerHour: 0 }, 4);
+    const entrances = new Set(residential.entrances.map((floor) => floor.id));
+    for (const passenger of withoutRounds.passengers) {
+      const touchesEntrance =
+        entrances.has(passenger.origin) || entrances.has(passenger.destination);
+      expect(touchesEntrance).toBe(true);
+    }
+
+    const stream = generateStream(residential, withRounds, 4);
+    const between = stream.passengers.filter(
+      (passenger) => !entrances.has(passenger.origin) && !entrances.has(passenger.destination),
+    );
+    expect(between.length).toBeGreaterThan(0);
+  });
+
+  it('starts and finishes at an entrance', () => {
+    const stream = generateStream(residential, withRounds, 4);
+    const entrances = new Set(residential.entrances.map((floor) => floor.id));
+    // Every leg that leaves an upper floor eventually has a matching leg arriving at one.
+    const legsFromEntrance = stream.passengers.filter((p) => entrances.has(p.origin)).length;
+    const legsToEntrance = stream.passengers.filter((p) => entrances.has(p.destination)).length;
+    expect(legsFromEntrance).toBeGreaterThan(0);
+    expect(legsToEntrance).toBeGreaterThan(0);
+  });
+
+  it('never takes the stairs, because of the parcels', () => {
+    const stream = generateStream(residential, withRounds, 4);
+    const entrances = new Set(residential.entrances.map((floor) => floor.id));
+    const onRound = stream.passengers.filter(
+      (passenger) => !entrances.has(passenger.origin) && !entrances.has(passenger.destination),
+    );
+    for (const passenger of onRound) {
+      expect(passenger.canUseStairs).toBe(false);
+      expect(passenger.patienceSeconds).toBeNull();
+    }
+  });
+
+  it('adds load: more rounds means more journeys', () => {
+    const few = generateStream(residential, { ...withRounds, roundsPerHour: 1 }, 4);
+    const many = generateStream(residential, { ...withRounds, roundsPerHour: 12 }, 4);
+    expect(many.passengers.length).toBeGreaterThan(few.passengers.length);
+  });
+
+  it('leaves the resident traffic untouched when rounds are switched off', () => {
+    const withOut = generateStream(residential, { ...withRounds, roundsPerHour: 0 }, 4);
+    const withIn = generateStream(residential, withRounds, 4);
+    const residentsOf = (stream: PassengerStream) =>
+      stream.passengers.filter((p) => p.canUseStairs || p.patienceSeconds !== null).length;
+    // Rounds are drawn from their own sub-stream, so they cannot shift the residents' arrivals.
+    expect(residentsOf(withIn)).toBe(residentsOf(withOut));
+  });
+
+  it('keeps every journey inside the building', () => {
+    const stream = generateStream(residential, withRounds, 4);
+    const ids = new Set(residential.floorIds);
+    for (const passenger of stream.passengers) {
+      expect(ids.has(passenger.origin)).toBe(true);
+      expect(ids.has(passenger.destination)).toBe(true);
+      expect(passenger.origin).not.toBe(passenger.destination);
+    }
+  });
+
+  it('survives a run with the invariants intact', () => {
+    const stream = generateStream(residential, withRounds, 4);
+    const result = runSimulation({
+      building: residential,
+      stream,
+      dispatcher: collective,
+      idlePolicy: 'stay-put',
+    });
+    expect(checkInvariants(stream, result)).toEqual([]);
+  });
+});
+
 describe('squeezing into a car going the wrong way', () => {
   // The car must actually stop at floor 2, or nobody there gets the chance to squeeze in — a car
   // that sails past is not an opportunity. So somebody on floor 2 is going up, which is what makes

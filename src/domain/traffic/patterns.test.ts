@@ -40,17 +40,13 @@ describe('trip kinds by pattern', () => {
     expect([...kinds].sort()).toEqual(['down', 'interfloor', 'up']);
   });
 
-  it('keeps interfloor a small slice of residential traffic', () => {
+  it('never sends a neighbour from one floor to another in a block of flats', () => {
+    // Residents ride to and from the entrance and nowhere else. The between-floor traffic a block
+    // really has belongs to the concierge and the courier, and those are generated as rounds.
     const prng = createPrng(2);
-    const draws = 20_000;
-    let interfloor = 0;
-    for (let i = 0; i < draws; i += 1) {
-      if (drawTripKind('residential-sparse', prng) === 'interfloor') interfloor += 1;
+    for (let i = 0; i < 20_000; i += 1) {
+      expect(drawTripKind('residential-sparse', prng)).not.toBe('interfloor');
     }
-    // Declared assumption in patterns.ts is 2%: in a block of flats, riding from one floor to
-    // another without touching the entrance is a rarity.
-    expect(interfloor / draws).toBeGreaterThan(0.015);
-    expect(interfloor / draws).toBeLessThan(0.025);
   });
 
   it('gives office lunch more interfloor traffic than a block of flats', () => {
@@ -62,7 +58,8 @@ describe('trip kinds by pattern', () => {
       }
       return interfloor / 20_000;
     };
-    expect(share('lunch')).toBeGreaterThan(share('residential-sparse') * 5);
+    expect(share('lunch')).toBeGreaterThan(0.15);
+    expect(share('residential-sparse')).toBe(0);
   });
 
   it('makes every pattern produce a different morning', () => {
