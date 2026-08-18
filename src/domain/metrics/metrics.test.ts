@@ -17,6 +17,8 @@ function journey(overrides: Partial<Journey> & Pick<Journey, 'passengerId'>): Jo
     boardedAt: 10,
     arrivedAt: 40,
     leftBehind: 0,
+    abandonedAt: null,
+    couldUseStairs: true,
     ...overrides,
   };
 }
@@ -30,7 +32,8 @@ function resultOf(journeys: readonly Journey[]): SimResult {
     carStarts: 3,
     carDistance: 25,
     endTime: 500,
-    unfinished: journeys.filter((j) => j.arrivedAt === null).length,
+    unfinished: journeys.filter((j) => j.arrivedAt === null && j.abandonedAt === null).length,
+    abandoned: journeys.filter((j) => j.abandonedAt !== null).length,
   };
 }
 

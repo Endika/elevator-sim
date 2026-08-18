@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Building } from '../building/Building';
 import { OFFICE_MID, RESIDENTIAL_LOW } from '../config/presets';
-import { expectedArrivals, type TrafficConfig } from '../config/TrafficConfig';
+import { expectedArrivals, TEXTBOOK_BEHAVIOUR, type TrafficConfig } from '../config/TrafficConfig';
 import { generateStream } from './PassengerStream';
 
 const residential = Building.of(RESIDENTIAL_LOW);
@@ -12,6 +12,7 @@ const UP_PEAK: TrafficConfig = {
   durationSeconds: 1800,
   demandPercentPer5Min: 12,
   burstiness: 1,
+  ...TEXTBOOK_BEHAVIOUR,
 };
 
 const entranceIds = residential.entrances.map((f) => f.id);
@@ -46,13 +47,17 @@ describe('common random numbers — the guarantee the whole method rests on', ()
     // A golden digest, verified stable across separate processes. Its job is to fail when the
     // generator changes by accident; a deliberate change means updating this number on purpose
     // and saying so, which is the point.
+    //
+    // Updated 18 Aug 2026, from 1bdef9fe: passengers gained the traits that decide whether they
+    // squeeze into a car going the wrong way and whether they can manage the stairs, so the
+    // serialised stream is a different shape. The arrival times and journeys are unchanged.
     const json = JSON.stringify(generateStream(residential, UP_PEAK, 1));
     let hash = 0x811c9dc5;
     for (let i = 0; i < json.length; i += 1) {
       hash ^= json.charCodeAt(i);
       hash = Math.imul(hash, 0x01000193);
     }
-    expect((hash >>> 0).toString(16)).toBe('1bdef9fe');
+    expect((hash >>> 0).toString(16)).toBe('da8beed0');
   });
 });
 

@@ -11,6 +11,8 @@ const COLUMNS = [
   ['journeyMean', 'mean total'],
   ['overThresholdShare', 'over 60 s'],
   ['leftBehind', 'left behind'],
+  ['abandoned', 'took the stairs'],
+  ['waitWhenStairsImpossible', 'wait if you cannot walk'],
   ['carStarts', 'starts'],
   ['carDistance', 'metres'],
 ] as const;
@@ -122,7 +124,7 @@ export class ResultsView {
     });
 
     return el('div', { class: 'overflow-x-auto' }, [
-      el('table', { class: 'w-full min-w-[820px] text-sm text-slate-400' }, [
+      el('table', { class: 'w-full min-w-[1000px] text-sm text-slate-400' }, [
         el('thead', { class: 'border-b border-slate-700 text-xs uppercase tracking-wide' }, [
           header,
         ]),
@@ -162,7 +164,7 @@ function format(key: string, value: number, sd: number): string {
   if (!Number.isFinite(value)) return '—';
   if (key === 'overThresholdShare') return `${(value * 100).toFixed(0)}%`;
   if (key === 'carDistance') return value.toFixed(0);
-  if (key === 'carStarts' || key === 'leftBehind') return value.toFixed(1);
+  if (key === 'carStarts' || key === 'leftBehind' || key === 'abandoned') return value.toFixed(1);
   const spread = Number.isFinite(sd) ? ` (±${sd.toFixed(1)})` : '';
   return `${value.toFixed(1)}${spread}`;
 }

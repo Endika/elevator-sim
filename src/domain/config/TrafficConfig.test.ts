@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { expectedArrivals, type TrafficConfig, validateTraffic } from './TrafficConfig';
+import {
+  expectedArrivals,
+  TEXTBOOK_BEHAVIOUR,
+  type TrafficConfig,
+  validateTraffic,
+} from './TrafficConfig';
 
 const UP_PEAK: TrafficConfig = {
   pattern: 'up-peak',
   durationSeconds: 1800,
   demandPercentPer5Min: 12,
   burstiness: 1,
+  ...TEXTBOOK_BEHAVIOUR,
 };
 
 describe('traffic config', () => {

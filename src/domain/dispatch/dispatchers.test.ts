@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Building } from '../building/Building';
 import { RESIDENTIAL_CAR } from '../config/PhysicsDefaults';
 import { RESIDENTIAL_LOW } from '../config/presets';
-import type { TrafficConfig } from '../config/TrafficConfig';
+import { TEXTBOOK_BEHAVIOUR, type TrafficConfig } from '../config/TrafficConfig';
 import type { CarView, DispatchContext, HallCall } from '../ports/Dispatcher';
 import { checkInvariants, waitOf } from '../sim/invariants';
 import { runSimulation } from '../sim/Simulation';
@@ -134,6 +134,7 @@ describe('every algorithm survives a real run', () => {
     durationSeconds: 1800,
     demandPercentPer5Min: 15,
     burstiness: 2,
+    ...TEXTBOOK_BEHAVIOUR,
   };
   const stream = generateStream(residential, traffic, 11);
 
@@ -161,13 +162,27 @@ describe('nearest-car starves the far floors, collective does not', () => {
     arrivalTime: 5 + i * 20,
     origin: i % 2 === 0 ? 0 : 1,
     destination: i % 2 === 0 ? 1 : 0,
+    boardsAnyDirection: false,
+    canUseStairs: false,
+    patienceSeconds: null,
   }));
   const stream = {
     seed: 0,
     building: residential.name,
     pattern: 'hand-made',
     durationSeconds: 300,
-    passengers: [...busyBottom, { id: 99, arrivalTime: 10, origin: 7, destination: 0 }],
+    passengers: [
+      ...busyBottom,
+      {
+        id: 99,
+        arrivalTime: 10,
+        origin: 7,
+        destination: 0,
+        boardsAnyDirection: false,
+        canUseStairs: false,
+        patienceSeconds: null,
+      },
+    ],
   };
 
   const worstWaitAtTop = (dispatcher: typeof collective): number => {

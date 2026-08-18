@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Building } from '../building/Building';
 import { RESIDENTIAL_CAR } from '../config/PhysicsDefaults';
 import { RESIDENTIAL_LOW } from '../config/presets';
-import type { TrafficConfig } from '../config/TrafficConfig';
+import { TEXTBOOK_BEHAVIOUR, type TrafficConfig } from '../config/TrafficConfig';
 import { clairvoyantOf } from '../dispatch/Clairvoyant';
 import { collective } from '../dispatch/Collective';
 import { fcfs } from '../dispatch/Fcfs';
@@ -18,6 +18,7 @@ const traffic: TrafficConfig = {
   durationSeconds: 1800,
   demandPercentPer5Min: 15,
   burstiness: 2,
+  ...TEXTBOOK_BEHAVIOUR,
 };
 
 describe('the unavoidable journey time is a real lower bound', () => {

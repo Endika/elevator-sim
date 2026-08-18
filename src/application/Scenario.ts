@@ -4,7 +4,7 @@ import { validateBuilding } from '../domain/config/BuildingConfig';
 import { RESIDENTIAL_CAR } from '../domain/config/PhysicsDefaults';
 import { floorStack, PRESETS, type PresetName } from '../domain/config/presets';
 import type { TrafficConfig, TrafficPattern } from '../domain/config/TrafficConfig';
-import { validateTraffic } from '../domain/config/TrafficConfig';
+import { OBSERVED_BEHAVIOUR, validateTraffic } from '../domain/config/TrafficConfig';
 import { DISPATCHER_NAMES, type DispatcherName } from '../domain/dispatch/registry';
 
 /**
@@ -28,6 +28,11 @@ export interface Scenario {
   readonly seeds: number;
   readonly dispatchers: readonly DispatcherName[];
   readonly car: CarSpec;
+  /** How people behave, not how the lift does. See OBSERVED_BEHAVIOUR. */
+  readonly opportunistShare: number;
+  readonly stairsPatiencePerFloor: number;
+  readonly stairsMaxFloors: number;
+  readonly stairsAbleShare: number;
 }
 
 export const DEFAULT_SCENARIO: Scenario = {
@@ -46,6 +51,7 @@ export const DEFAULT_SCENARIO: Scenario = {
   seeds: 30,
   dispatchers: DISPATCHER_NAMES,
   car: RESIDENTIAL_CAR,
+  ...OBSERVED_BEHAVIOUR,
 };
 
 export function scenarioFromPreset(name: PresetName): Scenario {
@@ -99,6 +105,10 @@ export function trafficConfigOf(scenario: Scenario): TrafficConfig {
     durationSeconds: scenario.durationMinutes * 60,
     demandPercentPer5Min: scenario.demandPercentPer5Min,
     burstiness: scenario.burstiness,
+    opportunistShare: scenario.opportunistShare,
+    stairsPatiencePerFloor: scenario.stairsPatiencePerFloor,
+    stairsMaxFloors: scenario.stairsMaxFloors,
+    stairsAbleShare: scenario.stairsAbleShare,
   };
 }
 

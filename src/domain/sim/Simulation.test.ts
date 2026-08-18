@@ -3,7 +3,7 @@ import { Building } from '../building/Building';
 import type { FloorId } from '../config/BuildingConfig';
 import { RESIDENTIAL_CAR } from '../config/PhysicsDefaults';
 import { RESIDENTIAL_LOW } from '../config/presets';
-import type { TrafficConfig } from '../config/TrafficConfig';
+import { TEXTBOOK_BEHAVIOUR, type TrafficConfig } from '../config/TrafficConfig';
 import type { Dispatcher } from '../ports/Dispatcher';
 import { generateStream, type PassengerStream } from '../traffic/PassengerStream';
 import { checkInvariants, timeToDestinationOf, waitOf } from './invariants';
@@ -41,7 +41,14 @@ function handMadeStream(
     building: RESIDENTIAL_LOW.name,
     pattern: 'hand-made',
     durationSeconds,
-    passengers,
+    // Hand-made passengers behave like the textbook: they never squeeze in the wrong way and
+    // never give up, so these tests measure the lift and nothing else.
+    passengers: passengers.map((passenger) => ({
+      ...passenger,
+      boardsAnyDirection: false,
+      canUseStairs: false,
+      patienceSeconds: null,
+    })),
   };
 }
 
@@ -52,6 +59,7 @@ const TRAFFIC: TrafficConfig = {
   durationSeconds: 1800,
   demandPercentPer5Min: 12,
   burstiness: 1,
+  ...TEXTBOOK_BEHAVIOUR,
 };
 
 describe('a single journey, timed by hand', () => {

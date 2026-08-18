@@ -31,6 +31,14 @@ export interface Metrics {
   readonly journeyMean: number;
   readonly journeyP95: number;
   readonly leftBehind: number;
+  /** People who gave up and walked. Without this the mean wait lies by survivorship. */
+  readonly abandoned: number;
+  readonly abandonedShare: number;
+  /**
+   * Mean wait of the people who had no choice — pram, shopping, crutches, delivery round. They
+   * cannot walk away from a bad lift, so this is the number that measures what it costs them.
+   */
+  readonly waitWhenStairsImpossible: number;
   readonly carStarts: number;
   readonly carDistance: number;
   /** Percentage of the building population carried per five minutes. */
@@ -85,6 +93,14 @@ export function metricsOf(building: Building, result: SimResult, periodSeconds: 
     journeyMean: mean(journeys),
     journeyP95: percentile(journeys, 0.95),
     leftBehind: result.journeys.reduce((sum, journey) => sum + journey.leftBehind, 0),
+    abandoned: result.abandoned,
+    abandonedShare: result.journeys.length === 0 ? 0 : result.abandoned / result.journeys.length,
+    waitWhenStairsImpossible: mean(
+      result.journeys
+        .filter((journey) => !journey.couldUseStairs)
+        .map(waitOf)
+        .filter((wait): wait is number => wait !== null),
+    ),
     carStarts: result.carStarts,
     carDistance: result.carDistance,
     deliveredPercentPer5Min:
@@ -98,6 +114,9 @@ export function metricsOf(building: Building, result: SimResult, periodSeconds: 
 
 /** Metrics whose lower value is better. Used to word verdicts without hardcoding each name. */
 export const LOWER_IS_BETTER = new Set<keyof Metrics>([
+  'abandoned',
+  'abandonedShare',
+  'waitWhenStairsImpossible',
   'waitMean',
   'waitP50',
   'waitP90',

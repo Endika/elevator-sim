@@ -70,6 +70,24 @@ export function verdictOf(scenario: Scenario, result: ExperimentResult): Verdict
     );
   }
 
+  const baselineStats = result.aggregates.find((entry) => entry.dispatcher === result.baseline);
+  const abandoned = baselineStats?.means.abandoned ?? 0;
+  const captive = baselineStats?.means.waitWhenStairsImpossible ?? 0;
+
+  if (abandoned >= 0.5) {
+    points.push(
+      `${abandoned.toFixed(1)} people a run give up and take the stairs. They stop counting the ` +
+        'moment they walk, so the average above is flattered by their leaving.',
+    );
+    if (captive > baselineWait) {
+      points.push(
+        `The people who cannot walk — pram, shopping, crutches, a delivery round — wait ` +
+          `${SECONDS(captive)}, not ${SECONDS(baselineWait)}. That is the number that matters, ` +
+          'because they have no way out of the queue.',
+      );
+    }
+  }
+
   points.push(
     `A single-floor trip spends ${(doorShare * 100).toFixed(0)}% of its time on doors, start ` +
       `delay and levelling, and only ${SECONDS(flight)} actually moving.`,

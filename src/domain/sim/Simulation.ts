@@ -47,6 +47,7 @@ type MutableJourney = { -readonly [K in keyof Journey]: Journey[K] };
 
 type EventKind =
   | 'arrival'
+  | 'giveUp'
   | 'reachedStop'
   | 'doorsOpen'
   | 'doorsClosed'
@@ -197,12 +198,35 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
       boardedAt: null,
       arrivedAt: null,
       leftBehind: 0,
+      abandonedAt: null,
+      couldUseStairs: passenger.canUseStairs,
     });
     waiting.set(passenger.origin, [...(waiting.get(passenger.origin) ?? []), passenger]);
+
+    if (passenger.patienceSeconds !== null) {
+      queue.push(passenger.arrivalTime + passenger.patienceSeconds, PRIORITY.passengerArrival, {
+        kind: 'giveUp',
+        carIndex: -1,
+        passenger,
+      });
+    }
 
     for (const car of cars) {
       if (car.activity === 'idle') scheduleDecision(car);
     }
+  };
+
+  /** Somebody walks. Their call disappears with them, which is demand the lift never sees. */
+  const handleGiveUp = (passenger: Passenger): void => {
+    const journey = journeys.get(passenger.id);
+    if (!journey || journey.boardedAt !== null) return;
+
+    const queued = waiting.get(passenger.origin) ?? [];
+    waiting.set(
+      passenger.origin,
+      queued.filter((waiter) => waiter.id !== passenger.id),
+    );
+    journey.abandonedAt = now;
   };
 
   const handleDecision = (car: CarState): void => {
@@ -260,7 +284,11 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
 
     const direction = dispatcher.boardingDirection(viewOf(car), context());
     const queued = waiting.get(car.floor) ?? [];
-    const eligible = queued.filter((p) => direction === 'any' || directionOf(p) === direction);
+    const wanted = queued.filter((p) => direction === 'any' || directionOf(p) === direction);
+    // Whoever is left over squeezes in anyway if they are that sort and there is still room —
+    // the lift is going the wrong way, but by the time it comes back there may be no space.
+    const squeezing = queued.filter((p) => !wanted.includes(p) && p.boardsAnyDirection);
+    const eligible = [...wanted, ...squeezing];
     const space = Math.max(0, car.spec.capacity - car.onboard.length);
     const boarding = eligible.slice(0, space);
 
@@ -270,7 +298,9 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
       if (journey) journey.boardedAt = boardingBase + (position + 1) * tp;
       car.onboard.push(passenger);
     });
-    for (const passenger of eligible.slice(space)) {
+    // Only people the car was actually serving count as left behind; somebody who tried to
+    // squeeze into a car going the other way was never owed a place on it.
+    for (const passenger of wanted.slice(space)) {
       const journey = journeys.get(passenger.id);
       if (journey) journey.leftBehind += 1;
     }
@@ -330,7 +360,7 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
     scheduleDecision(car);
   };
 
-  const handlers: Record<Exclude<EventKind, 'arrival'>, (car: CarState) => void> = {
+  const handlers: Record<Exclude<EventKind, 'arrival' | 'giveUp'>, (car: CarState) => void> = {
     decide: handleDecision,
     reachedStop: handleReachedStop,
     doorsOpen: handleDoorsOpen,
@@ -347,6 +377,10 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
     const event = next.payload;
     if (event.kind === 'arrival') {
       if (event.passenger) handleArrival(event.passenger);
+      continue;
+    }
+    if (event.kind === 'giveUp') {
+      if (event.passenger) handleGiveUp(event.passenger);
       continue;
     }
 
@@ -369,7 +403,10 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
     carStarts,
     carDistance,
     endTime: now,
-    unfinished: finished.filter((journey) => journey.arrivedAt === null).length,
+    unfinished: finished.filter(
+      (journey) => journey.arrivedAt === null && journey.abandonedAt === null,
+    ).length,
+    abandoned: finished.filter((journey) => journey.abandonedAt !== null).length,
   };
   if (options.trace) result.trace = trace;
   return result;

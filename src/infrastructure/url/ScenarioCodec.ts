@@ -34,6 +34,10 @@ const KEYS = {
   levellingDelay: 'lv',
   advanceDoorOpenTime: 'ad',
   passengerTransferTime: 'pt',
+  opportunistShare: 'op',
+  stairsPatiencePerFloor: 'sp',
+  stairsMaxFloors: 'sm',
+  stairsAbleShare: 'sa',
 } as const;
 
 export function encodeScenario(scenario: Scenario): string {
@@ -52,6 +56,10 @@ export function encodeScenario(scenario: Scenario): string {
   params.set(KEYS.burstiness, String(scenario.burstiness));
   params.set(KEYS.seeds, String(scenario.seeds));
   params.set(KEYS.dispatchers, scenario.dispatchers.join(','));
+  params.set(KEYS.opportunistShare, String(scenario.opportunistShare));
+  params.set(KEYS.stairsPatiencePerFloor, String(scenario.stairsPatiencePerFloor));
+  params.set(KEYS.stairsMaxFloors, String(scenario.stairsMaxFloors));
+  params.set(KEYS.stairsAbleShare, String(scenario.stairsAbleShare));
   params.set(KEYS.capacity, String(scenario.car.capacity));
   params.set(KEYS.ratedSpeed, String(scenario.car.ratedSpeed));
   params.set(KEYS.acceleration, String(scenario.car.acceleration));
@@ -84,6 +92,13 @@ export function decodeScenario(query: string): Scenario {
     return Number.isFinite(value) && value >= 0 ? value : fallback;
   };
 
+  const share = (key: string, fallback: number): number => {
+    const raw = params.get(key);
+    if (raw === null) return fallback;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 0 && value <= 1 ? value : fallback;
+  };
+
   const oneOf = <T extends string>(key: string, allowed: readonly T[], fallback: T): T => {
     const raw = params.get(key);
     return raw !== null && (allowed as readonly string[]).includes(raw) ? (raw as T) : fallback;
@@ -110,6 +125,15 @@ export function decodeScenario(query: string): Scenario {
     burstiness: number(KEYS.burstiness, DEFAULT_SCENARIO.burstiness),
     seeds: number(KEYS.seeds, DEFAULT_SCENARIO.seeds, { integer: true }),
     dispatchers: dispatchers.length >= 2 ? dispatchers : DEFAULT_SCENARIO.dispatchers,
+    opportunistShare: share(KEYS.opportunistShare, DEFAULT_SCENARIO.opportunistShare),
+    stairsPatiencePerFloor: nonNegative(
+      KEYS.stairsPatiencePerFloor,
+      DEFAULT_SCENARIO.stairsPatiencePerFloor,
+    ),
+    stairsMaxFloors: Math.round(
+      nonNegative(KEYS.stairsMaxFloors, DEFAULT_SCENARIO.stairsMaxFloors),
+    ),
+    stairsAbleShare: share(KEYS.stairsAbleShare, DEFAULT_SCENARIO.stairsAbleShare),
     car: {
       capacity: number(KEYS.capacity, DEFAULT_SCENARIO.car.capacity, { integer: true }),
       ratedSpeed: number(KEYS.ratedSpeed, DEFAULT_SCENARIO.car.ratedSpeed),

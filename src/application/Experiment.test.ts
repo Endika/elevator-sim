@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Building } from '../domain/building/Building';
 import { OFFICE_MID, RESIDENTIAL_LOW } from '../domain/config/presets';
-import type { TrafficConfig } from '../domain/config/TrafficConfig';
+import { TEXTBOOK_BEHAVIOUR, type TrafficConfig } from '../domain/config/TrafficConfig';
 import { generateStream } from '../domain/traffic/PassengerStream';
 import { experimentSpecOf, runExperiment } from './Experiment';
 import { DEFAULT_SCENARIO, trafficConfigOf } from './Scenario';
@@ -14,6 +14,7 @@ const RESIDENTIAL_TRAFFIC: TrafficConfig = {
   durationSeconds: 1800,
   demandPercentPer5Min: 15,
   burstiness: 2,
+  ...TEXTBOOK_BEHAVIOUR,
 };
 
 const OFFICE_TRAFFIC: TrafficConfig = {
@@ -21,6 +22,7 @@ const OFFICE_TRAFFIC: TrafficConfig = {
   durationSeconds: 1800,
   demandPercentPer5Min: 10,
   burstiness: 1,
+  ...TEXTBOOK_BEHAVIOUR,
 };
 
 describe('an experiment', () => {

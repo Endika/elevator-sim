@@ -50,13 +50,39 @@ export function checkInvariants(stream: PassengerStream, result: SimResult): str
     if (journey.leftBehind < 0) {
       problems.push(`Passenger ${journey.passengerId} was left behind a negative number of times.`);
     }
+
+    if (journey.abandonedAt !== null) {
+      if (journey.boardedAt !== null) {
+        problems.push(
+          `Passenger ${journey.passengerId} took the stairs after getting in the lift.`,
+        );
+      }
+      if (journey.abandonedAt < journey.calledAt) {
+        problems.push(`Passenger ${journey.passengerId} gave up before pressing the button.`);
+      }
+      if (!journey.couldUseStairs) {
+        problems.push(
+          `Passenger ${journey.passengerId} took the stairs, but the stairs were not an option ` +
+            'for them. Somebody with a pram waits, however long it takes.',
+        );
+      }
+    }
   }
 
-  const unfinished = result.journeys.filter((journey) => journey.arrivedAt === null).length;
+  const unfinished = result.journeys.filter(
+    (journey) => journey.arrivedAt === null && journey.abandonedAt === null,
+  ).length;
   if (unfinished !== result.unfinished) {
     problems.push(
-      `The result says ${result.unfinished} unfinished journeys but ${unfinished} have no ` +
-        'arrival time.',
+      `The result says ${result.unfinished} unfinished journeys but ${unfinished} are neither ` +
+        'delivered nor gone up the stairs.',
+    );
+  }
+
+  const abandoned = result.journeys.filter((journey) => journey.abandonedAt !== null).length;
+  if (abandoned !== result.abandoned) {
+    problems.push(
+      `The result says ${result.abandoned} people took the stairs but ${abandoned} journeys say so.`,
     );
   }
 

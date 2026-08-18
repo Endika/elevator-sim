@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Building } from '../building/Building';
 import { OFFICE_CAR, RESIDENTIAL_CAR, TOWER_CAR } from '../config/PhysicsDefaults';
 import { floorStack, OFFICE_MID } from '../config/presets';
+import { TEXTBOOK_BEHAVIOUR } from '../config/TrafficConfig';
 import { collective } from '../dispatch/Collective';
 import { runSimulation, type TraceEntry } from '../sim/Simulation';
 import { generateStream } from '../traffic/PassengerStream';
@@ -84,7 +85,13 @@ describe('the closed form behaves as the theory says', () => {
 function saturatedRun(building: Building) {
   const stream = generateStream(
     building,
-    { pattern: 'up-peak', durationSeconds: 5400, demandPercentPer5Min: 25, burstiness: 1 },
+    {
+      pattern: 'up-peak',
+      durationSeconds: 5400,
+      demandPercentPer5Min: 25,
+      burstiness: 1,
+      ...TEXTBOOK_BEHAVIOUR,
+    },
     42,
   );
   const result = runSimulation({
