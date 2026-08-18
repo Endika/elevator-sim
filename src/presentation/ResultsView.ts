@@ -1,3 +1,4 @@
+import type { Advice, Effort } from '../application/Advice';
 import type { ExperimentResult } from '../application/Experiment';
 import type { Scenario } from '../application/Scenario';
 import { verdictOf } from '../application/Verdict';
@@ -35,7 +36,7 @@ export class ResultsView {
     ]);
   }
 
-  show(scenario: Scenario, result: ExperimentResult): void {
+  show(scenario: Scenario, result: ExperimentResult, advice: Advice): void {
     const verdict = verdictOf(scenario, result);
 
     replace(this.element, [
@@ -47,6 +48,7 @@ export class ResultsView {
           verdict.points.map((point) => el('li', { text: `— ${point}` })),
         ),
       ]),
+      adviceCard(advice),
       blockedDoorsNotice(result),
       el('div', { class: CARD }, [
         heading('Every algorithm, side by side'),
@@ -157,6 +159,70 @@ function verdict(verdicts: ReadonlyMap<string, string>, dispatcher: string): HTM
  * The one thing on this page that costs nothing to fix, so it gets its own notice — and a measured
  * figure for this building rather than a piece of general advice.
  */
+const EFFORT_TONE: Record<Effort, string> = {
+  free: 'bg-emerald-500/15 text-emerald-300',
+  'a phone call': 'bg-sky-500/15 text-sky-300',
+  'building work': 'bg-rose-500/15 text-rose-300',
+};
+
+/**
+ * The answer to the question people actually have, which is not "which algorithm" but "what should
+ * we do". Every row was measured on the same seeds and the same passengers, and the effort column
+ * is there because a notice on the wall and a second shaft are not comparable prices.
+ */
+function adviceCard(advice: Advice): HTMLElement {
+  const helpful = advice.levers.filter((lever) => lever.saved >= 0.5);
+  const best = helpful[0]?.saved ?? 1;
+
+  const row = (lever: Advice['levers'][number]): HTMLElement =>
+    el('div', { class: 'flex flex-wrap items-center gap-x-3 gap-y-1 py-2' }, [
+      el('span', {
+        class: 'w-20 shrink-0 text-right font-semibold tabular-nums text-slate-100',
+        text: `−${lever.saved.toFixed(1)} s`,
+      }),
+      el('div', { class: 'h-1.5 w-24 shrink-0 overflow-hidden rounded bg-slate-800' }, [
+        el('div', {
+          class: 'h-full bg-amber-500',
+          style: `width:${Math.max(3, (lever.saved / best) * 100)}%`,
+        }),
+      ]),
+      el('span', {
+        class: `shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${EFFORT_TONE[lever.effort]}`,
+        text: lever.effort,
+      }),
+      el('span', { class: 'text-sm text-slate-200', text: lever.label }),
+    ]);
+
+  return el('div', { class: CARD }, [
+    heading('What would actually help'),
+    el('p', {
+      class: 'mb-2 text-xs text-slate-500',
+      text:
+        `Waiting now averages ${advice.waitNow.toFixed(1)} s. Each row is that same morning with ` +
+        'one thing changed, measured on the same seeds — not a rule of thumb. Sorted by what it ' +
+        'saves, labelled by what it takes.',
+    }),
+    helpful.length === 0
+      ? el('p', {
+          class: 'text-sm text-slate-400',
+          text: 'Nothing on the list moves the wait by even half a second. This lift is not the problem.',
+        })
+      : el('div', { class: 'divide-y divide-slate-800' }, helpful.map(row)),
+    advice.levers.some((lever) => lever.saved < 0.5)
+      ? el('p', {
+          class: 'mt-3 text-xs text-slate-500',
+          text:
+            'Left out because they changed nothing or made it worse: ' +
+            advice.levers
+              .filter((lever) => lever.saved < 0.5)
+              .map((lever) => lever.label.toLowerCase())
+              .join('; ') +
+            '.',
+        })
+      : null,
+  ]);
+}
+
 function blockedDoorsNotice(result: ExperimentResult): HTMLElement | null {
   const cost = result.blockedDoorsCost;
   if (!cost || cost.difference < 1) return null;

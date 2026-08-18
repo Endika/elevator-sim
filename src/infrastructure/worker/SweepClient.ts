@@ -1,10 +1,11 @@
+import type { Advice } from '../../application/Advice';
 import type { ExperimentResult } from '../../application/Experiment';
 import type { Scenario } from '../../application/Scenario';
 import type { SweepRequest, SweepResponse } from './protocol';
 
 export interface SweepHandlers {
-  readonly onProgress: (done: number, total: number) => void;
-  readonly onDone: (result: ExperimentResult) => void;
+  readonly onProgress: (done: number, total: number, stage: string) => void;
+  readonly onDone: (result: ExperimentResult, advice: Advice) => void;
   readonly onFailed: (message: string) => void;
 }
 
@@ -27,11 +28,11 @@ export class SweepClient {
     worker.onmessage = (event: MessageEvent<SweepResponse>) => {
       const response = event.data;
       if (response.kind === 'progress') {
-        handlers.onProgress(response.done, response.total);
+        handlers.onProgress(response.done, response.total, response.stage);
         return;
       }
       this.cancel();
-      if (response.kind === 'done') handlers.onDone(response.result);
+      if (response.kind === 'done') handlers.onDone(response.result, response.advice);
       else handlers.onFailed(response.message);
     };
 

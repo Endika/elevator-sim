@@ -44,6 +44,25 @@ Destination dispatch is deliberately not modelled — doing it faithfully needs 
 destination rather than by direction, which changes the engine's contract. The diagnosis
 questionnaire says so outright instead of pretending otherwise.
 
+## What it tells you
+
+Describe your building and it answers the question people actually have — not "which algorithm" but
+**what should we do**. It tries every change a building can make, on the same seeds and the same
+passengers, and ranks them by what they are measured to save and what they cost to do:
+
+```
+−86.5 s  BUILDING WORK   2 lifts instead of 1
+−45.5 s  FREE            Nobody holds the doors while loading
+−39.3 s  BUILDING WORK   A car that holds 8 instead of 6
+−29.9 s  A PHONE CALL    One second off the doors, each way
+−19.9 s  A PHONE CALL    Switch the controller to fcfs
+ −2.0 s  A PHONE CALL    Switch the controller to etd
+```
+
+That is a real answer from a real building: 5 floors, one 6-person car, 165 residents, the evening
+rush. The best algorithm is worth 20 seconds and the cheapest fix is worth 45 — which is the sort of
+thing you cannot guess, and the reason the tool exists.
+
 ## What it found
 
 Full write-up in `../elevator-sim-notes/report.md`. The headlines, all from 30 seeds with paired

@@ -92,14 +92,14 @@ export class App {
     this.results.clear('Running.');
 
     this.sweeps.run(this.scenario, {
-      onProgress: (done, total) => {
+      onProgress: (done, total, stage) => {
         this.progressBar.style.width = `${(done / total) * 100}%`;
-        this.progressLabel.textContent = `${done} of ${total} simulated mornings`;
+        this.progressLabel.textContent = `${stage}: ${done} of ${total}`;
       },
-      onDone: (result: ExperimentResult) => {
+      onDone: (result: ExperimentResult, advice) => {
         this.form.setBusy(false);
         this.progressLabel.textContent = `${result.seeds} seeds per algorithm, done.`;
-        this.results.show(this.scenario, result);
+        this.results.show(this.scenario, result, advice);
         this.loadReplay();
       },
       onFailed: (message) => {
