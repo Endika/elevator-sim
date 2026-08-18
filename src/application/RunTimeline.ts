@@ -8,6 +8,8 @@ export interface CarSnapshot {
   readonly position: number;
   readonly doorsOpen: boolean;
   readonly onboard: number;
+  /** How many of them are pushing something. Only meaningful with a single car. */
+  readonly bulky: number;
 }
 
 /** Somebody mid-step between the landing and the car. `progress` runs 0 → 1 as they walk. */
@@ -15,12 +17,19 @@ export interface Transfer {
   readonly floor: FloorId;
   readonly direction: 'boarding' | 'alighting';
   readonly progress: number;
+  readonly bulky: boolean;
+}
+
+/** Who is standing on a landing: everybody, and how many of them are pushing something. */
+export interface Waiting {
+  readonly total: number;
+  readonly bulky: number;
 }
 
 export interface Snapshot {
   readonly time: number;
   readonly cars: readonly CarSnapshot[];
-  readonly waiting: ReadonlyMap<FloorId, number>;
+  readonly waiting: ReadonlyMap<FloorId, Waiting>;
   readonly transfers: readonly Transfer[];
 }
 
@@ -70,20 +79,42 @@ export class RunTimeline {
         position: positionAt(track, time),
         doorsOpen: track.doorWindows.some((window) => time >= window.start && time <= window.end),
         onboard: occupancyAt(track, time),
+        // Who is aboard can only be told apart from the journeys, and only unambiguously when
+        // there is one car to be aboard of.
+        bulky: this.tracks.length === 1 ? this.bulkyRiders(time) : 0,
       })),
       waiting: this.waitingAt(time),
       transfers: this.transfersAt(time),
     };
   }
 
-  private waitingAt(time: number): Map<FloorId, number> {
-    const counts = new Map<FloorId, number>();
+  private waitingAt(time: number): Map<FloorId, Waiting> {
+    const counts = new Map<FloorId, Waiting>();
     for (const journey of this.journeys) {
       const boarded = journey.boardedAt;
-      const stillWaiting = journey.calledAt <= time && (boarded === null || boarded > time);
-      if (stillWaiting) counts.set(journey.origin, (counts.get(journey.origin) ?? 0) + 1);
+      const gone = journey.abandonedAt;
+      const stillWaiting =
+        journey.calledAt <= time &&
+        (boarded === null || boarded > time) &&
+        (gone === null || gone > time);
+      if (!stillWaiting) continue;
+      const at = counts.get(journey.origin) ?? { total: 0, bulky: 0 };
+      counts.set(journey.origin, {
+        total: at.total + 1,
+        bulky: at.bulky + (journey.spaceUnits > 1 ? 1 : 0),
+      });
     }
     return counts;
+  }
+
+  private bulkyRiders(time: number): number {
+    return this.journeys.filter(
+      (journey) =>
+        journey.spaceUnits > 1 &&
+        journey.boardedAt !== null &&
+        journey.boardedAt <= time &&
+        (journey.arrivedAt === null || journey.arrivedAt > time),
+    ).length;
   }
 
   /**
@@ -101,6 +132,7 @@ export class RunTimeline {
           floor: journey.origin,
           direction: 'boarding',
           progress: 1 - (boarded - time) / this.transferTime,
+          bulky: journey.spaceUnits > 1,
         });
       }
 
@@ -110,6 +142,7 @@ export class RunTimeline {
           floor: journey.destination,
           direction: 'alighting',
           progress: 1 - (arrived - time) / this.transferTime,
+          bulky: journey.spaceUnits > 1,
         });
       }
     }

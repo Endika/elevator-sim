@@ -139,9 +139,9 @@ export class App {
             el('p', {
               class: 'mb-3 text-xs text-slate-500',
               text:
-                'One seed, played back. Pale dots on the landing are people waiting, dark heads ' +
-                'inside the car are riders, and an amber dot is somebody stepping in or out. ' +
-                'Compare it with what your own lift does.',
+                'One seed, played back. A plain head is somebody on their own; a head with a box ' +
+                'is a pram, a trolley or the shopping, and takes the room of several. Pale on the ' +
+                'landing, dark inside the car, amber while stepping in or out.',
             }),
             this.replay.element,
           ]),

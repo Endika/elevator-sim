@@ -49,16 +49,17 @@ describe('positions', () => {
 
 describe('waiting counts', () => {
   it('starts empty and ends empty', () => {
-    expect([...timeline.at(0).waiting.values()].reduce((a, b) => a + b, 0)).toBe(0);
+    expect([...timeline.at(0).waiting.values()].reduce((a, b) => a + b.total, 0)).toBe(0);
     const atEnd = timeline.at(timeline.duration).waiting;
-    expect([...atEnd.values()].reduce((a, b) => a + b, 0)).toBe(0);
+    expect([...atEnd.values()].reduce((a, b) => a + b.total, 0)).toBe(0);
   });
 
   it('never counts more people than ever called from that floor', () => {
     for (let time = 0; time <= timeline.duration; time += 5) {
       for (const [floor, waiting] of timeline.at(time).waiting) {
         const everCalled = result.journeys.filter((journey) => journey.origin === floor).length;
-        expect(waiting).toBeLessThanOrEqual(everCalled);
+        expect(waiting.total).toBeLessThanOrEqual(everCalled);
+        expect(waiting.bulky).toBeLessThanOrEqual(waiting.total);
       }
     }
   });
@@ -66,7 +67,7 @@ describe('waiting counts', () => {
   it('counts somebody the instant they press the button', () => {
     const first = result.journeys[0];
     if (!first) throw new Error('expected a journey');
-    expect(timeline.at(first.calledAt).waiting.get(first.origin) ?? 0).toBeGreaterThan(0);
+    expect(timeline.at(first.calledAt).waiting.get(first.origin)?.total ?? 0).toBeGreaterThan(0);
   });
 });
 

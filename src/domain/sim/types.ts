@@ -15,6 +15,8 @@ export interface Journey {
   readonly abandonedAt: number | null;
   /** False for the pram, the shopping, the delivery round: the lift was their only option. */
   readonly couldUseStairs: boolean;
+  /** Places they took in the car. More than one means a pram, a trolley, the shopping. */
+  readonly spaceUnits: number;
 }
 
 export interface SimResult {

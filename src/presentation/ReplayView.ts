@@ -16,12 +16,27 @@ const CAR_GAP = 12;
 const PERSON_R = 3.2;
 const MAX_WAITING_DOTS = 6;
 const MAX_OCCUPANT_DOTS = 12;
+const BULKY_WIDTH = 9;
 const SPEEDS = [1, 4, 16, 60] as const;
 
 const CAR_FILL = '#f59e0b';
 const CAR_OPEN = '#fbbf24';
 const PERSON = '#e2e8f0';
 const RIDER = '#0f172a';
+
+/**
+ * A head on its own, or a head pushing something. The second is drawn wider on purpose: a pram
+ * takes the room of two and a half people, and a row of circles all the same size hides exactly
+ * the thing that fills the car.
+ */
+function person(x: number, y: number, bulky: boolean, fill: string): SVGElement[] {
+  if (!bulky) return [svg('circle', { cx: x, cy: y, r: PERSON_R, fill })];
+  return [
+    svg('circle', { cx: x - 2.6, cy: y - 1, r: PERSON_R - 0.4, fill }),
+    svg('rect', { x: x - 0.4, y: y - 0.6, width: 5.4, height: 4, rx: 1.2, fill, opacity: '0.85' }),
+    svg('rect', { x: x - 1.2, y: y - 2.4, width: 1.4, height: 3, rx: 0.6, fill, opacity: '0.85' }),
+  ];
+}
 
 /** Watching it is what makes the numbers believable, so this replays a single run frame by frame. */
 export class ReplayView {
@@ -263,35 +278,36 @@ export class ReplayView {
     this.scrubber.value = String(this.time);
   }
 
-  /** People still waiting, queued on the landing towards the doors. */
+  /**
+   * People still waiting, queued on the landing towards the doors. Whoever is pushing something is
+   * drawn wider, because that is the whole point: they take the room of several.
+   */
   private waitingDots(snapshot: Snapshot): SVGElement[] {
-    return [...snapshot.waiting].flatMap(([floor, count]) => {
+    return [...snapshot.waiting].flatMap(([floor, waiting]) => {
       const index = this.rowIndexOf(floor);
-      if (index < 0 || count === 0) return [];
+      if (index < 0 || waiting.total === 0) return [];
       const y = this.yOf(index);
-      const shown = Math.min(count, MAX_WAITING_DOTS);
-      const step = PERSON_R * 2 + 2.5;
+      const shown = Math.min(waiting.total, MAX_WAITING_DOTS);
 
-      const dots: SVGElement[] = Array.from({ length: shown }, (_, i) =>
-        svg('circle', { cx: LANDING_RIGHT - 6 - i * step, cy: y, r: PERSON_R, fill: PERSON }),
-      );
+      // Draw the bulky ones nearest the doors, so the queue reads left to right as it would.
+      const shapes: SVGElement[] = [];
+      let x = LANDING_RIGHT - 6;
+      for (let i = 0; i < shown; i += 1) {
+        const bulky = i < waiting.bulky;
+        shapes.push(...person(x, y, bulky, PERSON));
+        x -= bulky ? BULKY_WIDTH + 3 : PERSON_R * 2 + 2.5;
+      }
 
-      if (count > shown) {
-        dots.push(
+      if (waiting.total > shown) {
+        shapes.push(
           svg(
             'text',
-            {
-              x: LANDING_RIGHT - 10 - shown * step,
-              y: y + 4,
-              'text-anchor': 'end',
-              fill: '#64748b',
-              'font-size': '10',
-            },
-            [`+${count - shown}`],
+            { x: x - 2, y: y + 4, 'text-anchor': 'end', fill: '#64748b', 'font-size': '10' },
+            [`+${waiting.total - shown}`],
           ),
         );
       }
-      return dots;
+      return shapes;
     });
   }
 
@@ -319,16 +335,16 @@ export class ReplayView {
         ];
       }
 
-      const perRow = Math.min(6, Math.max(1, this.capacity));
+      const perRow = Math.min(5, Math.max(1, this.capacity));
       const spread = (CAR_WIDTH - 16) / Math.max(1, perRow - 1);
       return Array.from({ length: car.onboard }, (_, i) =>
-        svg('circle', {
-          cx: left + 8 + (i % perRow) * spread,
-          cy: top + 7 + Math.floor(i / perRow) * 8,
-          r: PERSON_R - 0.4,
-          fill: RIDER,
-        }),
-      );
+        person(
+          left + 8 + (i % perRow) * spread,
+          top + 7 + Math.floor(i / perRow) * 8,
+          i < car.bulky,
+          RIDER,
+        ),
+      ).flat();
     });
   }
 
@@ -342,14 +358,12 @@ export class ReplayView {
       const inside = this.carX(0) + 10;
       const along = transfer.direction === 'boarding' ? transfer.progress : 1 - transfer.progress;
 
-      return [
-        svg('circle', {
-          cx: landing + (inside - landing) * along,
-          cy: y,
-          r: PERSON_R,
-          fill: transfer.direction === 'boarding' ? '#fde68a' : PERSON,
-        }),
-      ];
+      return person(
+        landing + (inside - landing) * along,
+        y,
+        transfer.bulky,
+        transfer.direction === 'boarding' ? '#fde68a' : PERSON,
+      );
     });
   }
 }

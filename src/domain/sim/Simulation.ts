@@ -233,6 +233,7 @@ export function runSimulation(options: SimOptions): SimResult & { readonly trace
       leftBehind: 0,
       abandonedAt: null,
       couldUseStairs: passenger.canUseStairs,
+      spaceUnits: passenger.spaceUnits,
     });
     waiting.set(passenger.origin, [...(waiting.get(passenger.origin) ?? []), passenger]);
 

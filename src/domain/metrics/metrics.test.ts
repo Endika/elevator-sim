@@ -19,6 +19,7 @@ function journey(overrides: Partial<Journey> & Pick<Journey, 'passengerId'>): Jo
     leftBehind: 0,
     abandonedAt: null,
     couldUseStairs: true,
+    spaceUnits: 1,
     ...overrides,
   };
 }
