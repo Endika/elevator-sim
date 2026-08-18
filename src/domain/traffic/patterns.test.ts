@@ -47,9 +47,10 @@ describe('trip kinds by pattern', () => {
     for (let i = 0; i < draws; i += 1) {
       if (drawTripKind('residential-sparse', prng) === 'interfloor') interfloor += 1;
     }
-    // Declared assumption in patterns.ts is 4%.
-    expect(interfloor / draws).toBeGreaterThan(0.03);
-    expect(interfloor / draws).toBeLessThan(0.05);
+    // Declared assumption in patterns.ts is 2%: in a block of flats, riding from one floor to
+    // another without touching the entrance is a rarity.
+    expect(interfloor / draws).toBeGreaterThan(0.015);
+    expect(interfloor / draws).toBeLessThan(0.025);
   });
 
   it('gives office lunch more interfloor traffic than a block of flats', () => {
@@ -61,7 +62,7 @@ describe('trip kinds by pattern', () => {
       }
       return interfloor / 20_000;
     };
-    expect(share('lunch')).toBeGreaterThan(share('residential-sparse') * 2);
+    expect(share('lunch')).toBeGreaterThan(share('residential-sparse') * 5);
   });
 
   it('makes every pattern produce a different morning', () => {

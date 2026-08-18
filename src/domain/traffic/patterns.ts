@@ -13,12 +13,16 @@ export interface Trip {
 
 /**
  * DECLARED ASSUMPTIONS, not sourced figures. Both are balanced up and down; what separates them is
- * how much traffic never touches the entrance. Office workers cross between floors at lunch;
- * people in a block of flats rarely visit each other by lift.
+ * how much traffic never touches the entrance.
+ *
+ * In a block of flats that share is close to nothing, from watching one: you come in from the
+ * street or the garage and go up to your floor, or you come down from your floor and leave.
+ * Somebody riding from the second to the fourth is a rarity. Crossing between floors is an office
+ * habit, and mostly a lunchtime one.
  */
 const MIXES: Record<'lunch' | 'residential-sparse', Record<TripKind, number>> = {
   lunch: { up: 0.4, down: 0.4, interfloor: 0.2 },
-  'residential-sparse': { up: 0.48, down: 0.48, interfloor: 0.04 },
+  'residential-sparse': { up: 0.49, down: 0.49, interfloor: 0.02 },
 };
 
 function pickUniform(options: readonly Floor[], prng: Prng, what: string): FloorId {
