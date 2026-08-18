@@ -4,7 +4,7 @@ import { DISPATCHER_NAMES, type DispatcherName } from '../domain/dispatch/regist
 import { decodeScenario, encodeScenario } from '../infrastructure/url/ScenarioCodec';
 import type { SweepClient } from '../infrastructure/worker/SweepClient';
 import { DiagnoseView } from './DiagnoseView';
-import { el, replace } from './dom';
+import { el, replace, svg } from './dom';
 import { FormView } from './FormView';
 import { ReplayView } from './ReplayView';
 import { ResultsView } from './ResultsView';
@@ -114,10 +114,13 @@ export class App {
     replace(this.root, [
       el('div', { class: 'mx-auto max-w-5xl px-4 py-10 sm:px-6' }, [
         el('header', { class: 'mb-8' }, [
-          el('h1', {
-            class: 'text-3xl font-bold tracking-tight text-slate-50',
-            text: 'elevator-sim',
-          }),
+          el('div', { class: 'flex items-center gap-3' }, [
+            mark(),
+            el('h1', {
+              class: 'text-3xl font-bold tracking-tight text-slate-50',
+              text: 'elevator-sim',
+            }),
+          ]),
           el('p', {
             class: 'mt-2 max-w-2xl text-slate-400',
             text:
@@ -158,6 +161,20 @@ export class App {
       ]),
     ]);
   }
+}
+
+/**
+ * The same lift that sits in the browser tab, inline so the header needs no extra request and no
+ * base path. Shaft rails, a car parked low, and it is on its way up.
+ */
+function mark(): SVGElement {
+  return svg('svg', { viewBox: '0 0 32 32', class: 'size-9 shrink-0', 'aria-hidden': 'true' }, [
+    svg('rect', { width: 32, height: 32, rx: 7, fill: '#0f172a' }),
+    svg('rect', { x: 6, y: 5, width: 2.5, height: 22, rx: 1.25, fill: '#334155' }),
+    svg('rect', { x: 23.5, y: 5, width: 2.5, height: 22, rx: 1.25, fill: '#334155' }),
+    svg('rect', { x: 10, y: 16, width: 12, height: 11, rx: 1.5, fill: '#f59e0b' }),
+    svg('path', { d: 'M16 5.5 L21.5 12 H10.5 Z', fill: '#f59e0b' }),
+  ]);
 }
 
 export { DEFAULT_SCENARIO };
