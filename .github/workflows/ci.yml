@@ -24,14 +24,17 @@ jobs:
 
       - run: npm ci
 
-      - name: Lint and format (Biome)
+      - name: Format (Biome)
+        run: npm run format:check
+
+      - name: Lint (Biome)
         run: npm run lint
 
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run type:check
 
       - name: Test
-        run: npm test
+        run: npm run test:run
 
       - name: Build
         run: npm run build
