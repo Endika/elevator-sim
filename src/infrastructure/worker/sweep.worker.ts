@@ -2,9 +2,13 @@
 
 import { adviceFor } from '../../application/Advice';
 import { experimentSpecOf, runExperiment } from '../../application/Experiment';
-import type { SweepRequest, SweepResponse } from './protocol';
+import { isSweepRequest, type SweepResponse } from './protocol';
 
-self.onmessage = (event: MessageEvent<SweepRequest>) => {
+self.onmessage = (event: MessageEvent<unknown>) => {
+  if (!isSweepRequest(event.data)) {
+    post({ kind: 'failed', message: 'Malformed sweep request.' });
+    return;
+  }
   const { scenario } = event.data;
   try {
     const result = runExperiment(experimentSpecOf(scenario), (done, total) => {
