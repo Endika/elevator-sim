@@ -19,8 +19,9 @@ car parks when idle. This tells the two apart with numbers instead of opinions.
   speed, doors take as long as doors take, a full car passes the call by.
 - **Common random numbers**: for a given seed one passenger stream is generated and handed to
   every algorithm, so comparisons are paired rather than two independent means.
-- **30 seeds minimum**, reported as mean, spread and the paired difference. When the interval
-  crosses zero the verdict is `indistinguishable` — no winner is crowned inside the noise.
+- **30 seeds by default** (2 at the least), reported as mean, spread and the paired difference.
+  When the interval crosses zero that pair is `indistinguishable`, and when every pair is, the
+  verdict says the algorithm barely matters instead of naming a winner.
 - **Validated against classical lift traffic theory**: measured up-peak handling capacity is
   checked against the closed-form round-trip-time result. If they disagree, the simulator is
   wrong and the test fails.
@@ -46,9 +47,9 @@ questionnaire says so outright instead of pretending otherwise.
 
 ## What it tells you
 
-Describe your building and it answers the question people actually have — not "which algorithm" but
-**what should we do**. It tries every change a building can make, on the same seeds and the same
-passengers, and ranks them by what they are measured to save and what they cost to do:
+Describe your building and it answers the question people actually have — **what should we
+do**. It tries every change a building can make, on the same seeds and the same passengers, and
+ranks them by what they are measured to save and what they cost to do:
 
 ```
 −86.5 s  BUILDING WORK   2 lifts instead of 1
@@ -65,8 +66,7 @@ thing you cannot guess, and the reason the tool exists.
 
 ## What it found
 
-Full write-up in `../elevator-sim-notes/report.md`. The headlines, all from 30 seeds with paired
-intervals:
+The headlines, all from 30 seeds with paired intervals:
 
 - **In a 7-floor block with one car, the algorithm does matter** — `nearest-car` beats `collective`
   by 3.1 s of a 29.6 s wait (95% interval −4.7 to −1.6). But **half of every single-floor trip is
@@ -87,7 +87,7 @@ intervals:
 ```sh
 npm install
 npm run dev
-npm run lint && npm run typecheck && npm test && npm run build
+npm run format:check && npm run lint && npm run type:check && npm run test:run && npm run build
 
 # Batch sweeps for the report — same engine as the browser
 npm run sweep -- --preset residential-low --pattern all --idle all --seeds 30 --out out.json
