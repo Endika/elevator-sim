@@ -199,7 +199,7 @@ function adviceCard(advice: Advice): HTMLElement {
       class: 'mb-2 text-xs text-slate-500',
       text:
         `Waiting now averages ${advice.waitNow.toFixed(1)} s. Each row is that same morning with ` +
-        'one thing changed, measured on the same seeds — not a rule of thumb. Sorted by what it ' +
+        'one thing changed, measured on the same seeds. Sorted by what it ' +
         'saves, labelled by what it takes.',
     }),
     helpful.length === 0
@@ -244,7 +244,7 @@ function blockedDoorsNotice(result: ExperimentResult): HTMLElement | null {
     el('p', {
       class: 'mt-2 text-sm text-slate-400',
       text:
-        'That is a controlled comparison, not an estimate: the same people arrive at the same ' +
+        'That is a controlled comparison: the same people arrive at the same ' +
         'moments going to the same floors, and the only thing changed is whether anybody holds ' +
         'the doors.',
     }),
