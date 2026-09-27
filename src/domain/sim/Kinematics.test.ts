@@ -130,7 +130,7 @@ describe('performanceTime', () => {
   });
 
   it('is dominated by doors and delays on a single-floor hop, not by travel', () => {
-    // This is hypothesis H1 in the spec, visible in the arithmetic before any simulation runs.
+    // Visible in the arithmetic before any simulation runs.
     const car = RESIDENTIAL_CAR;
     const flight = flightTime(2.8, car);
     const overhead = performanceTime(2.8, car) - flight;

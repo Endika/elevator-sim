@@ -163,7 +163,7 @@ describe('every algorithm survives a real run', () => {
 });
 
 describe('nearest-car starves the far floors, collective does not', () => {
-  // Hypothesis H3. A steady stream near the bottom plus one person at the top.
+  // A steady stream near the bottom plus one person at the top.
   const busyBottom = Array.from({ length: 12 }, (_, i) => ({
     id: i + 1,
     arrivalTime: 5 + i * 20,

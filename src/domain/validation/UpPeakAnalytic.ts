@@ -9,7 +9,7 @@ import { flightTime } from '../sim/Kinematics';
  *
  * Formulae transcribed from Peters, "Improvements to the Up Peak Round Trip Time Calculation",
  * International Journal of Elevator Engineers 3(1), 2000 — equations (3), (4), (11), (12), (17),
- * (18), (19). See elevator-sim-notes/sources.md, S4. The lineage is Jones, Schroeder, and
+ * (18), (19) (S4). The lineage is Jones, Schroeder, and
  * Barney & dos Santos.
  *
  * One documented extension: the levelling delay is added to the per-stop time. The 2000 paper

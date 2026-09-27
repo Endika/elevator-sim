@@ -43,7 +43,7 @@ function pickByPopulation(options: readonly Floor[], prng: Prng): FloorId {
 
 /**
  * The peaks are deliberately pure — every trip starts or ends at an entrance, with no interfloor
- * share. The closed-form handling-capacity check in T7 assumes pure up-peak, and that is what
+ * share. The closed-form handling-capacity check in UpPeakAnalytic assumes pure up-peak, and that is what
  * makes the comparison meaningful. Realistic mixes live in `lunch` and `residential-sparse`.
  */
 export function drawTripKind(pattern: TrafficPattern, prng: Prng): TripKind {

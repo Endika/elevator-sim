@@ -25,7 +25,7 @@ const nearestFirst: Dispatcher = {
 
     // Stable assignment: call i belongs to car i mod carCount. Ranking cars by who happens to
     // be free instead would let two cars chase the same call, because the ranking shifts as
-    // each car decides. Proper group assignment arrives in T12.
+    // each car decides.
     const mine = context.hallCalls.filter((_, index) => index % context.cars.length === car.index);
     return mine.length > 0 ? nearest(mine.map((call) => call.floor)) : null;
   },
