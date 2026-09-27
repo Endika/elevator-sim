@@ -5,7 +5,7 @@ import { DISPATCHER_NAMES } from '../dispatch/registry';
 export type Answer = 'yes' | 'no' | 'unsure';
 
 /**
- * A question earns its place only by ruling algorithms in or out. `consistentWith` lists the
+ * A question is kept only if it rules algorithms in or out. `consistentWith` lists the
  * algorithms whose behaviour matches a "yes"; a "no" rules those out instead. Questions about the
  * idle policy answer a different question — where the time goes — and carry no algorithm weight.
  */

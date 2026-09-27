@@ -6,7 +6,7 @@ function answers(entries: Record<string, Answer>): Map<string, Answer> {
   return new Map(Object.entries(entries));
 }
 
-describe('the questionnaire earns its questions', () => {
+describe('every question in the questionnaire separates algorithms', () => {
   it('has no question that fails to separate at least two algorithms', () => {
     expect(questionsWithoutDiscriminatingPower().map((question) => question.id)).toEqual([]);
   });

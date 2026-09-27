@@ -10,7 +10,7 @@ export interface SweepHandlers {
 }
 
 /**
- * Runs a sweep off the main thread. Six algorithms across thirty seeds is a lot of simulated
+ * Runs a sweep off the main thread. Four algorithms across thirty seeds is a lot of simulated
  * mornings; on the main thread the page would sit frozen and look broken.
  *
  * One sweep at a time: starting another cancels the first, because its answer is already stale.

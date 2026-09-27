@@ -132,7 +132,7 @@ describe('the simulator agrees with the closed form', () => {
     ['office, 12 floors', uniformBuilding(OFFICE_CAR, 12, 3.5, 40), 0.1],
     ['tower, 20 floors', uniformBuilding(TOWER_CAR, 20, 3.5, 50), 0.1],
     // A small building with barely three passengers a trip strains the closed form's own
-    // assumptions — an express return and a full lobby load — so it earns a wider margin.
+    // assumptions — an express return and a full lobby load — so it gets a wider margin.
     ['residential, 7 floors', uniformBuilding(RESIDENTIAL_CAR, 7, 2.8, 6), 0.15],
   ] as const;
 

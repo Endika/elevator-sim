@@ -104,7 +104,7 @@ describe('the shape of a stream', () => {
   });
 });
 
-describe('up-peak is pure, because the T7 analytic check assumes it is', () => {
+describe('up-peak is pure, because the up-peak analytic check assumes it is', () => {
   it('starts every journey at an entrance', () => {
     const stream = generateStream(office, UP_PEAK, 4);
     const fromEntrance = stream.passengers.filter((p) => office.at(p.origin).isEntrance);

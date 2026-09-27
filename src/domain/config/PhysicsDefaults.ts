@@ -1,6 +1,10 @@
 /**
  * SOURCED — traceable to a published figure, cited inline. ESTIMATE — a plausible value with no
- * source found, not dressed up as precision. Full references in elevator-sim-notes/sources.md.
+ * source found, not dressed up as precision.
+ *
+ * S1: Peters, "Lift Performance Time". S2: passenger transfer time (Barney / CIBSE Guide D;
+ * ISO 4190-6). S3: example door times from lift traffic analysis material (Elevator World,
+ * university notes). S4: Peters, "Improvements to the Up Peak Round Trip Time Calculation", 2000.
  */
 
 import type { CarSpec } from './BuildingConfig';

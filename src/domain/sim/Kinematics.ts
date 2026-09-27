@@ -5,8 +5,7 @@
  * A one-floor hop does not reach rated speed, so travel time is emphatically not proportional to
  * distance, and in a low-rise building almost every hop is of that kind.
  *
- * Formulae from Peters, "Lift Performance Time" (see ../../../elevator-sim-notes/sources.md, S1),
- * equations (3)–(5). Equations (4) and (5) were corrupted in the PDF text extraction and have
+ * Formulae from Peters, "Lift Performance Time" (S1), equations (3)–(5). Equations (4) and (5) were corrupted in the PDF text extraction and have
  * been reconstructed; the reconstruction is pinned by continuity at both case boundaries, which
  * is asserted in the tests.
  */
