@@ -52,7 +52,7 @@ export class ResultsView {
       blockedDoorsNotice(result),
       el('div', { class: CARD }, [
         heading('Every algorithm, side by side'),
-        this.table(result),
+        this.table(result, verdict.best),
         el('p', {
           class: 'mt-3 text-xs text-slate-500',
           text:
@@ -82,7 +82,7 @@ export class ResultsView {
     ]);
   }
 
-  private table(result: ExperimentResult): HTMLElement {
+  private table(result: ExperimentResult, best: string | null): HTMLElement {
     const header = el('tr', {}, [
       cell('th', 'algorithm', 'text-left'),
       cell('th', 'vs baseline', 'text-left'),
@@ -99,11 +99,11 @@ export class ResultsView {
       (a, b) => (a.means.waitMean ?? 0) - (b.means.waitMean ?? 0),
     );
 
-    const rows = ranked.map((aggregate, index) => {
+    const rows = ranked.map((aggregate) => {
       const isBaseline = aggregate.dispatcher === result.baseline;
       // The winner is what the reader is looking for. Highlighting the baseline instead — which
       // is only ever the yardstick — reads as "this one won" and is exactly backwards.
-      const isBest = index === 0;
+      const isBest = aggregate.dispatcher === best;
 
       return el('tr', { class: isBest ? 'bg-amber-500/10' : '' }, [
         el('td', { class: 'px-2 py-2 text-left font-medium text-slate-200' }, [

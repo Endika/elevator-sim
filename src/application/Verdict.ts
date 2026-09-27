@@ -1,12 +1,14 @@
 import type { DispatcherName } from '../domain/dispatch/registry';
+import { comparePaired } from '../domain/metrics/PairedComparison';
 import { flightTime, performanceTime } from '../domain/sim/Kinematics';
-import type { ExperimentResult } from './Experiment';
+import type { Aggregate, ExperimentResult } from './Experiment';
 import type { Scenario } from './Scenario';
 
 export interface Verdict {
   readonly headline: string;
   readonly points: readonly string[];
-  readonly best: DispatcherName;
+  /** Null when the lowest mean wait is inside the seed noise of some other algorithm. */
+  readonly best: DispatcherName | null;
   /** False when no algorithm beats the baseline beyond seed noise. */
   readonly algorithmMatters: boolean;
   /** Share of a single-floor trip spent on doors and delays rather than moving. */
@@ -29,11 +31,8 @@ export function verdictOf(scenario: Scenario, result: ExperimentResult): Verdict
   );
   const algorithmMatters = decisive.length > 0;
 
-  const ranked = [...result.aggregates].sort(
-    (a, b) => (a.means.waitMean ?? 0) - (b.means.waitMean ?? 0),
-  );
-  const best = ranked[0]?.dispatcher ?? result.baseline;
-  const worst = ranked[ranked.length - 1];
+  const best = standsApart(result, 'lowest');
+  const worst = standsApart(result, 'highest');
   const baselineWait =
     result.aggregates.find((entry) => entry.dispatcher === result.baseline)?.means.waitMean ?? 0;
 
@@ -100,10 +99,37 @@ export function verdictOf(scenario: Scenario, result: ExperimentResult): Verdict
     );
   }
 
-  const headline = algorithmMatters
-    ? `${best} is the best fit for this building` +
-      (worst ? `, and ${worst.dispatcher} the worst.` : '.')
-    : 'For this building the algorithm barely matters — your time goes into the doors.';
+  const headline = !algorithmMatters
+    ? 'For this building the algorithm barely matters — your time goes into the doors.'
+    : best
+      ? `${best} is the best fit for this building${worst ? `, and ${worst} the worst.` : '.'}`
+      : `No algorithm beats every other by more than seed noise${worst ? `, but ${worst} is the worst.` : '.'}`;
 
   return { headline, points, best, algorithmMatters, doorShare };
+}
+
+/**
+ * The algorithm with the lowest (or highest) mean wait, but only when its paired interval clears
+ * zero against every other algorithm, not just the baseline. The ranking by mean alone would crown
+ * a leader whose margin over the runner-up is a lucky seed.
+ */
+function standsApart(result: ExperimentResult, end: 'lowest' | 'highest'): DispatcherName | null {
+  const ranked = [...result.aggregates].sort(
+    (a, b) => (a.means.waitMean ?? 0) - (b.means.waitMean ?? 0),
+  );
+  const leader = end === 'lowest' ? ranked[0] : ranked[ranked.length - 1];
+  if (!leader || ranked.length < 2) return null;
+
+  const series = (aggregate: Aggregate) => ({
+    name: aggregate.dispatcher,
+    values: aggregate.perSeed.map((metrics) => metrics.waitMean),
+  });
+  const expected = end === 'lowest' ? 'better' : 'worse';
+  const apart = ranked
+    .filter((other) => other !== leader)
+    .every(
+      (other) =>
+        comparePaired('waitMean', series(other), series(leader), true).verdict === expected,
+    );
+  return apart ? leader.dispatcher : null;
 }

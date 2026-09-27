@@ -25,10 +25,6 @@ describe('the residential case', () => {
     );
   });
 
-  it('names a best algorithm even when the difference is noise', () => {
-    expect(verdict.best).toBeTruthy();
-  });
-
   it('says so plainly when the algorithm is not the problem', () => {
     if (!verdict.algorithmMatters) {
       expect(verdict.headline).toContain('barely matters');
@@ -45,11 +41,12 @@ describe('the residential case', () => {
 });
 
 describe('the office case', () => {
-  it('finds the algorithm does matter, and says which', () => {
+  it('finds the algorithm does matter, without crowning a leader tied with the runner-up', () => {
     const scenario = { ...scenarioFromPreset('office-mid'), seeds: 20 };
     const { verdict } = verdictFor(scenario, 20);
     expect(verdict.algorithmMatters).toBe(true);
-    expect(verdict.headline).toContain('best fit');
+    expect(verdict.best).toBeNull();
+    expect(verdict.headline).toMatch(/^No algorithm beats every other by more than seed noise/);
   });
 });
 
