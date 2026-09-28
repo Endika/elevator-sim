@@ -68,18 +68,19 @@ thing you cannot guess, and the reason the tool exists.
 
 The headlines, all from 30 seeds with paired intervals:
 
-- **In a 7-floor block with one car, the algorithm does matter** — `nearest-car` beats `collective`
-  by 3.1 s of a 29.6 s wait (95% interval −4.7 to −1.6). But **half of every single-floor trip is
-  doors, start delay and levelling**, and 56% of the whole journey is overhead above the physical
-  minimum. Both facts are true; quoting one without the other misleads.
+- **In a 7-floor block with one car, the algorithm barely matters** — `nearest-car` and
+  `collective` are within seed noise, 0.7 s apart on a 32.6 s wait (95% interval −2.1 to 0.9), and
+  only `fcfs` is measurably worse, by 3.2 s. **Half of every single-floor trip is doors, start
+  delay and levelling**, and 61% of the whole journey is overhead above the physical minimum.
 - **Where the car waits when idle can matter more than the algorithm.** In a 6-car tower the idle
-  policy moves the mean wait by 5.5 s while the best algorithm moves it by 0.4 s — a factor of 12.
-- **The best algorithm depends on the traffic.** `collective`'s directional sweep wins the morning
-  rush and loses badly to everything, even `fcfs`, on interfloor traffic.
+  policy moves the mean wait by 38 s while the best algorithm moves it by 10.5 s — a factor of 3.6.
+  Left where they stopped, the cars fall behind the morning rush altogether.
+- **The best algorithm depends on the traffic.** In the tower `collective`'s directional sweep
+  beats everything on interfloor traffic and loses to `fcfs` by 34 s on the evening rush.
 - **Under saturation the sweep wins and greedy cost minimisation collapses** — and the clairvoyant
-  reference, handed the future, comes out 15% *worse* than `collective`. Which is precisely why it
+  reference, handed the future, comes out 32% *worse* than `collective`. Which is precisely why it
   is labelled a reference and never an optimum.
-- **Validated against the classical up-peak round trip calculation** to within 0.3% on two of three
+- **Validated against the classical up-peak round trip calculation** to within 1.8% on two of three
   buildings.
 
 ## Development
