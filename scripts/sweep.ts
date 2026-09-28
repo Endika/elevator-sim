@@ -1,6 +1,7 @@
 import { writeFileSync } from 'node:fs';
 import { experimentSpecOf, runExperiment } from '../src/application/Experiment';
 import { buildingOf, scenarioFromPreset, trafficConfigOf } from '../src/application/Scenario';
+import { upPeakRoundTripOf } from '../src/application/UpPeakCheck';
 import { verdictOf } from '../src/application/Verdict';
 import type { IdlePolicy } from '../src/domain/config/BuildingConfig';
 import { IDLE_POLICIES } from '../src/domain/config/BuildingConfig';
@@ -14,7 +15,6 @@ import { mean } from '../src/domain/metrics/Percentiles';
 import { runSimulation } from '../src/domain/sim/Simulation';
 import { generateStream } from '../src/domain/traffic/PassengerStream';
 import { overheadAgainstIdeal } from '../src/domain/validation/IdealJourney';
-import { analyseUpPeak } from '../src/domain/validation/UpPeakAnalytic';
 
 /**
  * Batch runner for the report. Same engine as the browser — there is a test that the two agree —
@@ -187,19 +187,12 @@ for (const pattern of patterns) {
           `${round(overhead.meanActual)} s (${round(overhead.overheadShare * 100)}%)`,
       );
     }
-    if (pattern === 'up-peak' && car) {
-      const load = mean(
-        result.aggregates
-          .filter((entry) => entry.dispatcher === 'collective')
-          .map((entry) => entry.means.delivered ?? 0),
-      );
-      if (load > 0) {
-        const analytic = analyseUpPeak({
-          building,
-          passengersPerTrip: Math.max(1, Math.min(car.capacity, load / 10)),
-        });
-        console.log(`  analytic up-peak RTT: ${round(analytic.roundTripTime)} s`);
-      }
+    const collectiveAggregate = result.aggregates.find(
+      (entry) => entry.dispatcher === 'collective',
+    );
+    if (pattern === 'up-peak' && collectiveAggregate) {
+      const roundTrip = upPeakRoundTripOf(building, collectiveAggregate);
+      if (roundTrip !== null) console.log(`  analytic up-peak RTT: ${round(roundTrip)} s`);
     }
   }
 }
