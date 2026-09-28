@@ -1,15 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { Building } from '../building/Building';
 import { RESIDENTIAL_CAR } from '../config/PhysicsDefaults';
-import { RESIDENTIAL_LOW } from '../config/presets';
-import { TEXTBOOK_BEHAVIOUR, type TrafficConfig } from '../config/TrafficConfig';
+import { OFFICE_MID, RESIDENTIAL_LOW } from '../config/presets';
+import {
+  OBSERVED_BEHAVIOUR,
+  TEXTBOOK_BEHAVIOUR,
+  type TrafficConfig,
+} from '../config/TrafficConfig';
 import { clairvoyantOf } from '../dispatch/Clairvoyant';
 import { collective } from '../dispatch/Collective';
 import { fcfs } from '../dispatch/Fcfs';
-import type { Dispatcher } from '../ports/Dispatcher';
+import type { CarView, DispatchContext, Dispatcher } from '../ports/Dispatcher';
 import { checkInvariants } from '../sim/invariants';
 import { runSimulation } from '../sim/Simulation';
-import { generateStream, type PassengerStream } from '../traffic/PassengerStream';
+import { generateStream, type Passenger, type PassengerStream } from '../traffic/PassengerStream';
 import { overheadAgainstIdeal, unavoidableJourneyTime } from './IdealJourney';
 
 const building = Building.of(RESIDENTIAL_LOW);
@@ -99,6 +103,60 @@ describe('the clairvoyant reference', () => {
     };
 
     expect(meanWait((stream) => clairvoyantOf(stream))).toBeLessThan(meanWait(() => collective));
+  });
+
+  it('does not pre-position a car for somebody who could not fit in it', () => {
+    const newcomer = (id: number): Passenger => ({
+      id,
+      arrivalTime: 101,
+      origin: 6,
+      destination: 0,
+      boardsAnyDirection: false,
+      canUseStairs: false,
+      patienceSeconds: null,
+      spaceUnits: 1,
+      doorHoldSeconds: 0,
+    });
+    const stream: PassengerStream = {
+      seed: 1,
+      building: 'test',
+      pattern: 'test',
+      durationSeconds: 600,
+      passengers: [newcomer(1), newcomer(2), newcomer(3)],
+    };
+    const nearlyFull: CarView = {
+      index: 0,
+      floor: 3,
+      target: null,
+      activity: 'idle',
+      direction: 'up',
+      onboard: 5,
+      spaceUsed: 5.5,
+      capacity: 6,
+      carCalls: [0],
+      idleSince: null,
+    };
+    const context: DispatchContext = { building, now: 100, cars: [nearlyFull], hallCalls: [] };
+
+    expect(clairvoyantOf(stream).nextStop(nearlyFull, context)).toBe(0);
+  });
+
+  it('runs a multi-car down-peak, where cars fill to within half a place', () => {
+    const office = Building.of(OFFICE_MID);
+    const downPeak: TrafficConfig = {
+      ...traffic,
+      ...OBSERVED_BEHAVIOUR,
+      pattern: 'down-peak',
+      durationSeconds: 3600,
+    };
+    const stream = generateStream(office, downPeak, 1);
+    const result = runSimulation({
+      building: office,
+      stream,
+      dispatcher: clairvoyantOf(stream),
+      idlePolicy: 'stay-put',
+    });
+    expect(checkInvariants(stream, result)).toEqual([]);
   });
 
   it('never sees a stream it was not given', () => {

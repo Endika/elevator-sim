@@ -33,7 +33,10 @@ export function clairvoyantOf(stream: PassengerStream, horizonSeconds = 120): Di
 
     nextStop(car, context) {
       const calls = car.spaceUsed >= car.capacity ? [] : callsFor(car, context);
-      const future = car.spaceUsed >= car.capacity ? [] : upcoming(context.now);
+      // Same rule as callsFor: half a place free is no use to anybody, so a nearly full car must
+      // not keep touring the floors of people it could never take.
+      const room = car.capacity - car.spaceUsed;
+      const future = upcoming(context.now).filter((passenger) => passenger.spaceUnits <= room);
 
       // Pre-position only where the passenger will certainly be standing when the car arrives,
       // and only to a floor no other car has taken. Without both, foresight turns into a door
