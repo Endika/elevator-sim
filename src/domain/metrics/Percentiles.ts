@@ -21,5 +21,5 @@ export function standardDeviation(values: readonly number[]): number {
 }
 
 export function max(values: readonly number[]): number {
-  return values.length === 0 ? Number.NaN : values.reduce((a, b) => (b > a ? b : a));
+  return values.length === 0 ? Number.NaN : values.reduce((a, b) => Math.max(a, b));
 }
